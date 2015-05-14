@@ -10,16 +10,6 @@ author: Yusuke Sakamoto
 import numpy as np
 import pandas as pd
 
-# print "saving bids data..."
-bids_bots = pd.read_csv('data/bids_bots.csv')
-bids_human = pd.read_csv('data/bids_human.csv')
-
-bots_id = (bids_bots['bidder_id']).unique()
-human_id = (bids_human['bidder_id']).unique()
-
-num_bots = len(bots_id)
-num_human = len(human_id)
-
 
 # maximum number of auction particpated by one bot == 1018
 # NOTE!! for number of bids for each auction data (sorted in descendent order),
@@ -42,6 +32,8 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 
     # for each bidder
     for i in range(num_bidders):
+        if i%10 == 0:
+            print "%d/%d" %(i, num_bidders)
         # bids by this bidder
         bbbidder = bids[bids['bidder_id'] == class_id[i]]
 
@@ -80,6 +72,21 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 
     return bidders_info, bidders_bids_by_aucs
 
+
+# print "Loading bids data..."
+# bids_bots = pd.read_csv('data/bids_bots.csv')
+# bids_human = pd.read_csv('data/bids_human.csv')
+
+# bots_id = (bids_bots['bidder_id']).unique()
+# human_id = (bids_human['bidder_id']).unique()
+
+# num_bots = len(bots_id)
+# num_human = len(human_id)
+
+bids_test = pd.read_csv('data/bids_test.csv')
+test_id = bids_test['bidder_id'].unique()
+num_test = len(test_id)
+
 # print "Analysing bots data..."
 
 # bots_info, bots_bids_by_aucs\
@@ -96,5 +103,10 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 # human_info.to_csv('data/human_info.csv', index_label='bidder_id')
 # human_bids_by_aucs.to_csv('data/human_bids_by_aucs.csv', index_label='bidder_id')
 
+print "Analysing test data..."
 
-bids_test = pd.read_csv('data/bids_test.csv')
+test_info, test_bids_by_aucs\
+    = gather_info(num_test, max_auc[2], max_auc_count, bids_test, test_id)
+
+test_info.to_csv('data/test_info.csv', index_label='bidder_id')
+test_bids_by_aucs.to_csv('data/test_bids_by_aucs.csv', index_label='bidder_id')
