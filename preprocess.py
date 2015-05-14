@@ -28,69 +28,73 @@ num_human = len(human_id)
 # into 1~10 bids, 11~100 bids, etc. The criterial should be chosen by
 # comparing bids by bots and human
 
-# maximum number of auctions participated by one [human, bot]
-max_auc = [1623, 1018]
+# maximum number of auctions participated by one [human, bot, test]
+max_auc = [1623, 1018, 1726]
+max_auc_count = 100
 
-# ANALYSIS
-tmpb_auc = np.zeros((num_bots, max_auc[1]), dtype=int)
-tmpb = np.zeros((num_bots, 3), dtype=int)
-tembp_mch = np.zeros(num_bots, dtype=object)
 
-for i in range(num_bots):
-    # bids by this bot
-    bbbots = bids_bots[bids_bots['bidder_id'] == bots_id[i]]
+def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 
-    # number of bids by this bot
-    num_bbbots = len(bbbots)
-    # number of auction by this bot
-    num_abbots = len(bbbots['auction'].unique())
-    
-    nbfea = []
-    # count number of bids for each auction
-    for auc in bbbots['auction'].unique():
-        nbfea.append(len(bbbots[bbbots['auction'] == auc]))
+    # ANALYSIS
+    tmp_auc = np.zeros((num_bidders, max_auc), dtype=int)
+    tmp = np.zeros((num_bidders, 3), dtype=int)
+    tmp_mch = np.zeros(num_bidders, dtype=object)
 
-    tmpb_auc[i, :len(nbfea)] = sorted(nbfea, reverse=True)
+    # for each bidder
+    for i in range(num_bidders):
+        # bids by this bidder
+        bbbidder = bids[bids['bidder_id'] == class_id[i]]
 
-    tmpb[i, 0] = num_bbbots
-    tmpb[i, 1] = num_abbots
-    tmpb[i, 2] = num_merchandise
-    tempb_mch[i] = bbbots['merchandise'].unique()
+        # number of bids by this bidder
+        num_bbbidder = len(bbbidder)
+        # number of auction by this bidder
+        num_abbidder = len(bbbidder['auction'].unique())
 
-bots_mch = pd.DataFrame(tempb_mch)
-bots_info = pd.DataFrame(tmpb, index=bots_id, columns=list(['num_bids', 'num_aucs', 'num_merchandise']))
-bots_bids_by_aucs = pd.DataFrame(tmpb_auc, index=bots_id)
+        # count number of bids for each auction
+        nbfea = []
+        for auc in bbbidder['auction'].unique():
+            nbfea.append(len(bbbidder[bbbidder['auction'] == auc]))
 
-bots_info.to_csv('data/bots_info.csv', index_label='bidder_id')
-bots_bids_by_aucs.to_csv('data/bots_bids_by_aucs.csv', index_label='bidder_id')
+        tmp_auc[i, :len(nbfea)] = sorted(nbfea, reverse=True)
+        # NOTE: each bidder only has ONE unique merchandise, check
+        # num_merchandise attribute
+        tmp_mch[i] = bbbidder['merchandise'].unique()[0]
 
-# HUMAN
-tmph_auc = np.zeros((num_human, max_auc[0]), dtype=int)
-tmph = np.zeros((num_human, 3), dtype=int)
-    
-for i in range(num_human):
-    # bids by this bot
-    bbhuman = bids_human[bids_human['bidder_id'] == human_id[i]]
+        tmp[i, 0] = num_bbbidder
+        tmp[i, 1] = num_abbidder
+        tmp[i, 2] = len(bbbidder['merchandise'].unique())
 
-    # number of bids by this bot
-    num_bbhuman = len(bbhuman)
-    # number of auction by this bot
-    num_abhuman = len(bbhuman['auction'].unique())
-    num_merchandise = len(bbbots['merchandise'].unique())
-    
-    nbfea = []
-    # count number of bids for each auction
-    for auc in bbhuman['auction'].unique():
-        nbfea.append(len(bbhuman[bbhuman['auction'] == auc]))
+    bidders_mch = pd.get_dummies(pd.DataFrame(tmp_mch, index=class_id,
+                                              columns=['merchandise']))
+    bidders_info = pd.DataFrame(tmp, index=class_id,
+                                columns=list(['num_bids',
+                                              'num_aucs',
+                                              'num_merchandise']))
+    bidders_bids_by_aucs = pd.DataFrame(
+        tmp_auc, index=class_id,
+        columns=map(lambda x: 'num_bids_by_auc_'+str(x), range(max_auc)))
 
-    tmph_auc[i, :len(nbfea)] = sorted(nbfea, reverse=True)
+    bidders_info = pd.concat([bidders_info, bidders_mch,
+                              bidders_bids_by_aucs.iloc[:, :max_auc_count]],
+                             axis=1)
 
-    tmph[i, 0] = num_bbhuman
-    tmph[i, 1] = num_abhuman
-    tmph[i, 2] = num_merchandise
-    
-human_info = pd.DataFrame(tmph, index=human_id, columns=list(['num_bids', 'num_aucs', 'num_merchandise']))
-human_bids_by_aucs = pd.DataFrame(tmph_auc, index=human_id)
+    return bidders_info, bidders_bids_by_aucs
 
-human_info.to_csv('data/human_info.csv', index_label='bidder_id')
-human_bids_by_aucs.to_csv('data/human_bids_by_aucs.csv', index_label='bidder_id')
+# print "Analysing bots data..."
+
+# bots_info, bots_bids_by_aucs\
+#     = gather_info(num_bots, max_auc[1], max_auc_count, bids_bots, bots_id)
+
+# bots_info.to_csv('data/bots_info.csv', index_label='bidder_id')
+# bots_bids_by_aucs.to_csv('data/bots_bids_by_aucs.csv', index_label='bidder_id')
+
+# print "Analysing huaman data..."
+
+# human_info, human_bids_by_aucs\
+#     = gather_info(num_human, max_auc[0], max_auc_count, bids_human, human_id)
+
+# human_info.to_csv('data/human_info.csv', index_label='bidder_id')
+# human_bids_by_aucs.to_csv('data/human_bids_by_aucs.csv', index_label='bidder_id')
+
+
+bids_test = pd.read_csv('data/bids_test.csv')
