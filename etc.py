@@ -3,7 +3,7 @@ import numpy as np
 
 from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-
+from sklearn.metrics import roc_auc_score
 
 bids_test = pd.read_csv('data/bids_test.csv')
 
@@ -107,7 +107,7 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 def predict_usample(num_human, num_bots, human_info, bots_info, test_info):
     
     # under-sample the human data
-    num_human_ext = min(num_bots*1, num_human)
+    num_human_ext = min(num_bots*10, num_human)
     index_shuffle = range(num_human)
     np.random.shuffle(index_shuffle)
     train_info = pd.concat(
@@ -117,10 +117,10 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info):
     y = np.concatenate([np.zeros(num_human_ext), np.ones(num_bots)], axis=0)
 
     # shuffle!
-    # index_shuffle = range(len(y))
-    # np.random.shuffle(index_shuffle)
-    # X_train = X_train[index_shuffle]
-    # y = y[index_shuffle]
+    index_shuffle = range(len(y))
+    np.random.shuffle(index_shuffle)
+    X_train = X_train[index_shuffle]
+    y = y[index_shuffle]
 
     X_test = test_info.values[:, 1:]
 
@@ -141,4 +141,6 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info):
     train_proba = clf.predict_proba(X_train)
     train_pred = clf.predict(X_train)
 
+    print "training set auc score: ", roc_auc_score(y, train_pred)
+    
     return y_proba, y_pred, train_proba, train_pred

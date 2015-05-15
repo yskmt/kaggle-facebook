@@ -83,7 +83,6 @@ test_info.drop(columns_dropped, axis=1, inplace=True)
 # bagging with bootstrap
 y_probas = []
 for i in range(1):
-    print i
     y_proba, y_pred, train_proba, train_pred \
         = predict_usample(num_human, num_bots, human_info, bots_info, test_info)
     y_probas.append(y_proba[:,1])  # gather the bot probabilities
