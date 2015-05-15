@@ -107,7 +107,7 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 def predict_usample(num_human, num_bots, human_info, bots_info, test_info):
     
     # under-sample the human data
-    num_human_ext = min(num_bots*5, num_human)
+    num_human_ext = min(num_bots*1, num_human)
     index_shuffle = range(num_human)
     np.random.shuffle(index_shuffle)
     train_info = pd.concat(
@@ -125,6 +125,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info):
     X_test = test_info.values[:, 1:]
 
     # Predict!
+    print "fitting the model"
     # clf = RandomForestClassifier(n_estimators=100, n_jobs=4,
     #                              random_state=1234, verbose=1,
     #                              max_features='auto')

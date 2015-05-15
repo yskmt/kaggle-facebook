@@ -36,23 +36,21 @@ num_bots = len(bots_id)
 num_human = len(human_id)
 num_test = len(test_id)
 
-print "Analysing bots data..."
+print "Analyzing huaman data..."
+human_info, human_bids_by_aucs\
+    = gather_info(num_human, max_auc[0], max_auc_count, bids_human, human_id)
+human_info.to_csv('data/human_info.csv', index_label='bidder_id')
+human_bids_by_aucs.to_csv('data/human_bids_by_aucs.csv', index_label='bidder_id')
+
+print "Analyzing bots data..."
 bots_info, bots_bids_by_aucs\
     = gather_info(num_bots, max_auc[1], max_auc_count, bids_bots, bots_id)
 bots_info.to_csv('data/bots_info.csv', index_label='bidder_id')
 bots_bids_by_aucs.to_csv('data/bots_bids_by_aucs.csv', index_label='bidder_id')
 
-print "Analysing huaman data..."
-human_info, human_bids_by_aucs\
-    = gather_info(num_human, max_auc[0], max_auc_count, bids_human, human_id)
-
-human_info.to_csv('data/human_info.csv', index_label='bidder_id')
-human_bids_by_aucs.to_csv('data/human_bids_by_aucs.csv', index_label='bidder_id')
-
-print "Analysing test data..."
+print "Analyzing test data..."
 test_info, test_bids_by_aucs\
     = gather_info(num_test, max_auc[2], max_auc_count, bids_test, test_id)
-
 test_info.to_csv('data/test_info.csv', index_label='bidder_id')
 test_bids_by_aucs.to_csv('data/test_bids_by_aucs.csv', index_label='bidder_id')
 

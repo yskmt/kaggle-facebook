@@ -1,5 +1,6 @@
 # Facebook Recruiting IV: Human or Robot?
 
+* pandas: http://pandas.pydata.org/pandas-docs/stable/10min.html
 
 ## Strategies
 
