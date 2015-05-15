@@ -105,10 +105,14 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 
 
 def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
-                    holdout=0.0):
+                    holdout=0.0, multiplicity=5):
+    '''
+    multiplicity: ratio of human to bots in training set
+    '''
+
     
     # under-sample the human data
-    num_human_ext = min(num_bots*10, num_human)
+    num_human_ext = min(num_bots*multiplicity, num_human)
     index_shuffle = range(num_human)
     np.random.shuffle(index_shuffle)
 
@@ -163,7 +167,8 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         valid_proba = clf.predict_proba(X_valid)
         valid_pred = clf.predict(X_valid)
 
-        print "validation set auc score: ", roc_auc_score(y_valid, valid_pred)
+        auc_valid = roc_auc_score(y_valid, valid_pred)
+        print "validation set auc score: ", auc_valid
         
     # prediction on test set
     y_proba = clf.predict_proba(X_test)
@@ -173,6 +178,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     train_proba = clf.predict_proba(X_train)
     train_pred = clf.predict(X_train)
 
-    print "training set auc score: ", roc_auc_score(y, train_pred)
+    auc_train = roc_auc_score(y, train_pred)
+    print "training set auc score: ", auc_train
     
-    return y_proba, y_pred, train_proba, train_pred
+    return y_proba, y_pred, train_proba, train_pred, auc_valid
