@@ -52,25 +52,24 @@ test_ids = test_info['bidder_id']
 # X_train = X_train[index_shuffle, :]
 
 # Because number of bots is significantly smaller than number of
-# humans, under-sample the human data
-# num_human_ex = min(num_bots, num_human)
-# index_shuffle = range(num_human_ex)
-# np.random.shuffle(index_shuffle)
-# X_human = X_train[index_shuffle]
-# y = np.concatenate([y[:num_human_ex], y[num_human:]], axis=0)
-# X_train = np.concatenate([X_human, X_train[num_human:, :]], axis=0)
-# shuffle again just in case
-# index_shuffle2 = range(len(y))
-# np.random.shuffle(index_shuffle2)
-# y = y[index_shuffle2]
-# X_train = X_train[index_shuffle2]
+# humans, special care needs to be taken
 
-# over-sample
-multiplicity = num_human/num_bots
-bots_info_os = [bots_info] * multiplicity
-train_info = pd.concat([human_info] + bots_info_os, axis=0).sort(axis=1)
+# under-sample the human data
+index_shuffle = range(num_human)
+np.random.shuffle(index_shuffle)
+train_info = pd.concat(
+    [human_info.iloc[index_shuffle[:num_bots]], bots_info], axis=0).sort(axis=1)
 X_train = train_info.values[:, 1:]
-y = np.concatenate([np.zeros(num_human), np.ones(num_bots*multiplicity)], axis=0)
+y = np.concatenate([np.zeros(num_bots), np.ones(num_bots)], axis=0)
+
+# # over-sample the bots data
+# multiplicity = num_human/num_bots
+# bots_info_os = [bots_info] * multiplicity
+# train_info = pd.concat([human_info] + bots_info_os, axis=0).sort(axis=1)
+# X_train = train_info.values[:, 1:]
+# y = np.concatenate([np.zeros(num_human), np.ones(num_bots*multiplicity)], axis=0)
+
+
 # shuffle!
 index_shuffle = range(len(y))
 np.random.shuffle(index_shuffle)
@@ -78,6 +77,9 @@ X_train = X_train[index_shuffle]
 y = y[index_shuffle]
 
 X_test = test_info.values[:, 1:]
+
+
+# Predict!
 
 from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import RandomForestClassifier
