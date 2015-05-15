@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+from sklearn.linear_model import SGDClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+
+
 bids_test = pd.read_csv('data/bids_test.csv')
 
 def get_max_auc(bids):
@@ -97,3 +101,43 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
                              axis=1)
 
     return bidders_info, bidders_bids_by_aucs
+
+
+
+def predict_usample(num_human, num_bots, human_info, bots_info, test_info):
+    
+    # under-sample the human data
+    num_human_ext = min(num_bots*5, num_human)
+    index_shuffle = range(num_human)
+    np.random.shuffle(index_shuffle)
+    train_info = pd.concat(
+        [human_info.iloc[index_shuffle[:num_human_ext]], bots_info],
+        axis=0).sort(axis=1)
+    X_train = train_info.values[:, 1:].astype(float)
+    y = np.concatenate([np.zeros(num_human_ext), np.ones(num_bots)], axis=0)
+
+    # shuffle!
+    # index_shuffle = range(len(y))
+    # np.random.shuffle(index_shuffle)
+    # X_train = X_train[index_shuffle]
+    # y = y[index_shuffle]
+
+    X_test = test_info.values[:, 1:]
+
+    # Predict!
+    # clf = RandomForestClassifier(n_estimators=100, n_jobs=4,
+    #                              random_state=1234, verbose=1,
+    #                              max_features='auto')
+    clf = GradientBoostingClassifier()
+    # clf = SGDClassifier(loss="log", verbose=1, random_state=1234, n_iter=5000)
+    clf.fit(X_train, y)
+
+    # prediction on test set
+    y_proba = clf.predict_proba(X_test)
+    y_pred = clf.predict(X_test)
+
+    # measuring prediction peformance agianst train set
+    train_proba = clf.predict_proba(X_train)
+    train_pred = clf.predict(X_train)
+
+    return y_proba, y_pred, train_proba, train_pred

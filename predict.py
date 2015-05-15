@@ -10,6 +10,7 @@ author: Yusuke Sakamoto
 import numpy as np
 import pandas as pd
 
+from etc import predict_usample
 
 print "Loading postprocessed data files..."
 
@@ -54,14 +55,6 @@ test_ids = test_info['bidder_id']
 # Because number of bots is significantly smaller than number of
 # humans, special care needs to be taken
 
-# under-sample the human data
-index_shuffle = range(num_human)
-np.random.shuffle(index_shuffle)
-train_info = pd.concat(
-    [human_info.iloc[index_shuffle[:num_bots]], bots_info], axis=0).sort(axis=1)
-X_train = train_info.values[:, 1:]
-y = np.concatenate([np.zeros(num_bots), np.ones(num_bots)], axis=0)
-
 # # over-sample the bots data
 # multiplicity = num_human/num_bots
 # bots_info_os = [bots_info] * multiplicity
@@ -69,34 +62,34 @@ y = np.concatenate([np.zeros(num_bots), np.ones(num_bots)], axis=0)
 # X_train = train_info.values[:, 1:]
 # y = np.concatenate([np.zeros(num_human), np.ones(num_bots*multiplicity)], axis=0)
 
+# drop unnecessary columns
+for i in range(100):
+    human_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+    bots_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+    test_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
 
-# shuffle!
-index_shuffle = range(len(y))
-np.random.shuffle(index_shuffle)
-X_train = X_train[index_shuffle]
-y = y[index_shuffle]
+# columns_dropped = [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips', u'num_urls']
+columns_dropped = [u'num_merchandise']
+human_info.drop(columns_dropped, axis=1, inplace=True)
+bots_info.drop(columns_dropped, axis=1, inplace=True)
+test_info.drop(columns_dropped, axis=1, inplace=True)
 
-X_test = test_info.values[:, 1:]
+# for key in human_info.keys():
+#     if 'merchandise' in key:
+#         human_info.drop([key], axis=1, inplace=True)
+#         bots_info.drop([key], axis=1, inplace=True)
+#         test_info.drop([key], axis=1, inplace=True)
 
+# bagging with bootstrap
+y_probas = []
+for i in range(1):
+    y_proba, y_pred, train_proba, train_pred \
+        = predict_usample(num_human, num_bots, human_info, bots_info, test_info)
+    y_probas.append(y_proba[:,1])  # gather the bot probabilities
 
-# Predict!
-
-from sklearn.linear_model import SGDClassifier
-from sklearn.ensemble import RandomForestClassifier
-
-clf = RandomForestClassifier(n_estimators=1000, n_jobs=2, random_state=1234, verbose=1,
-                             max_features='auto')
-# clf = SGDClassifier(loss="log", verbose=1, random_state=1234, n_iter=5000)
-clf.fit(X_train, y)
-
-# prediction on test set
-y_proba = clf.predict_proba(X_test)
-y_pred = clf.predict(X_test)
-
-# measuring prediction peformance agianst train set
-train_proba = clf.predict_proba(X_train)
-train_pred = clf.predict(X_train)
-
+y_probas = np.array(y_probas)
+y_proba_ave = y_probas.T.mean(axis=1)
+    
 ### 70 bidders in test.csv do not have any data in bids.csv. Thus they
 ### are not included in analysis/prediction, but they need to be
 ### appended in the submission. The prediction of these bidders do not matter.
@@ -107,6 +100,8 @@ submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
                                           index=test_ids_append, columns=['prediction'])
 
 # Make as submission file!
-submission = pd.DataFrame(y_proba[:,1], index=test_ids, columns=['prediction'])
+submission = pd.DataFrame(y_proba_ave, index=test_ids, columns=['prediction'])
 submission = pd.concat([submission, submission_append], axis=0)
 submission.to_csv('data/submission.csv', index_label='bidder_id')
+
+print sum(y_pred)/float(len(y_proba_ave))
