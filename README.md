@@ -12,23 +12,28 @@
 
 ## Observations
 
+* UNBALANCED SAMPLES!!! The number of bots are far fewer than number
+  of human. Algorithm needs to accomodate this unbalanced-ness.
+    * http://stats.stackexchange.com/questions/17225/when-over-under-sampling-unbalanced-classes-does-maximizing-accuracy-differ-fro
+    * http://www.reddit.com/r/MachineLearning/comments/12evgi/classification_when_80_of_my_training_set_is_of/
 * Number of bids done by bidders in training data: 3071224
 * Number of unique __ done by bidders in the training dataset
-  * auctions: 12740
-  * merchandises: 10
-  * devices 5729
-  * time: 742669
-  * country: 199
-  * url: 663873
+    * auctions: 12740
+    * merchandises: 10
+    * devices 5729
+    * time: 742669
+    * country: 199
+    * url: 663873
 * Bots only participate auction with those categories:
-  * mobile, jewelry, office equipment, computers books and
+    * mobile, jewelry, office equipment, computers books and
     music, sporting goods, home goods
 * Each auction can have multiple merchandises
-  * "Merchandise" category is merely a search term that each bid is
+    * "Merchandise" category is merely a search term that each bid is
     referred.
 * There are bidders (both in train.csv, test.csv) that do not have any
   bids in bids.csv.
 * Number of merchandies by the same bidder is always **1**.
+
 
 ## Second strategy
 
@@ -39,24 +44,24 @@ Useful information to be extracted:
 3. Number of bids in each auction: should be sorted by descending order
    and 0 for no bid.
 4. Bid frequency extracted from time
-   * Bid freqnency extracted from time for each **device**
+    * Bid freqnency extracted from time for each **device**
 5. Numbef of auctions participated for each merchandise type 
-   * Number of merchandise by each bidder is always **1**.
+    * Number of merchandise by each bidder is always **1**.
 6. Number of devices used
 7. Countries, urls, devices: check the correlation between each label and bot/human
    classification and use the best ~10 countries?
 8. Auction winners(?)
-   * Last bidder in a given auction.
+    * Last bidder in a given auction.
 9. Price of the item bidders bid
-   * Total number of bids in each auction == price of the item
+    * Total number of bids in each auction == price of the item
 10. Anomaly behaviors(?)
     * Repeated bids by one person
 
 ## Problesm
 
 1. Generating dummy vaiables take up a large amount of memory.
-   *  Brute-force dummy labeling will create 1,425,220 labels
-#  
+    * Brute-force dummy labeling will create 1,425,220 labels
+
 
 ## Ideas
 
