@@ -1,5 +1,5 @@
 """
-analysis.py
+preprocess.py
 
 Facebook Recruiting IV: Human or Robot?
 
@@ -77,46 +77,3 @@ len(bids_train['device'].unique())       # 5729
 len(bids_train['time'].unique())         # 742669
 len(bids_train['country'].unique())      # 199
 len(bids_train['url'].unique())          # 663873
-
-# brute-force dummy labeling will create 1,425,220 labels
-# time can be categorize into smaller groups?
-# cluster the dataset using some unsupervised learning technique?
-
-# first try with smaller data sets
-bids_train_small = bids_train.drop(['auction', 'device', 'time', 'url'], axis=1)
-bids_test_small = bids_test.drop(['auction', 'device', 'time', 'url'], axis=1)
-
-# create dummy labels
-dummies = []
-for key in bids_train_small.keys():
-    dummies.append(pd.get_dummies(bids_train_small[key]))
-bids_train_dummies = pd.concat(dummies, axis=1)
-bids_train_dummies.to_csv('bids_train_dummies.csv')
-
-dummies = []
-for key in bids_test_small.keys():
-    dummies.append(pd.get_dummies(bids_test_small[key]))
-bids_test_dummies = pd.concat(dummies, axis=1)
-bids_test_dummies.to_csv('bids_test_dummies.csv')
-
-# SGD (stochstic gradient descent classifier) with logloss
-# from sklearn.linear_model import SGDClassifier
-
-# clf = SGDClassifier(loss="log", verbose=1, random_state=1234)
-# clf.fit(bids_train_dummies, outcome)
-# >>> clf.predict_proba([[1., 1.]])
-
-
-# label encoding - dummy variables?
-# ref: http://fastml.com/converting-categorical-data-into-numbers-with-pandas-and-scikit-learn/
-# http://stackoverflow.com/questions/25530504/encoding-column-labels-in-pandas-for-machine-learning
-
-# large number of sparse labels classification
-# http://research.microsoft.com/en-us/um/people/manik/pubs%5Cagrawal13.pdf
-# http://jmlr.org/proceedings/papers/v32/yu14.pdf
-
-# Idea 1: classify the bidder by useful-looking labels: auction,
-# merchandise, device, time, country, url
-
-# Idea 2: cluster the bids by their information and use them as a
-# classifier?
