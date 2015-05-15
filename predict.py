@@ -64,10 +64,10 @@ test_ids = test_info['bidder_id']
 # y = np.concatenate([np.zeros(num_human), np.ones(num_bots*multiplicity)], axis=0)
 
 # drop unnecessary columns
-for i in range(10,100):
-    human_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
-    bots_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
-    test_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+# for i in range(10,100):
+#     human_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+#     bots_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+#     test_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
 
 # columns_dropped = [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips', u'num_urls']
 columns_dropped = [u'num_merchandise']
@@ -82,21 +82,28 @@ test_info.drop(columns_dropped, axis=1, inplace=True)
 #         test_info.drop([key], axis=1, inplace=True)
 
 # bagging with bootstrap
-num_sim = 100
-y_probas = []
-valid_score = 0
-for i in range(num_sim):
-    np.random.seed(int(time.time()*1000))
-    y_proba, y_pred, train_proba, train_pred, auc_valid \
-        = predict_usample(num_human, num_bots, human_info, bots_info, test_info,
-                          holdout=0.2, multiplicity=1)
-    y_probas.append(y_proba[:,1])  # gather the bot probabilities
-    valid_score += auc_valid
+vs_cv = []
+for k in range(1,2):
+    num_sim = 100
+    y_probas = []
+    valid_score = 0
+    for i in range(num_sim):
+        np.random.seed(int(time.time()*1000))
+        y_proba, y_pred, train_proba, train_pred, auc_valid \
+            = predict_usample(num_human, num_bots, human_info, bots_info, test_info,
+                              holdout=0.15, multiplicity=k)
+        y_probas.append(y_proba[:,1])  # gather the bot probabilities
+        valid_score += auc_valid
+
+    # print "valid score: ", valid_score/float(num_sim)
+    vs_cv.append(valid_score/float(num_sim))
+
+print "CV result:"
+print vs_cv
     
 y_probas = np.array(y_probas)
 y_proba_ave = y_probas.T.mean(axis=1)
 
-print "valid score: ", valid_score/float(num_sim)
 ### 70 bidders in test.csv do not have any data in bids.csv. Thus they
 ### are not included in analysis/prediction, but they need to be
 ### appended in the submission. The prediction of these bidders do not matter.
