@@ -43,22 +43,22 @@ Useful information to be extracted:
 2. Total number of auctions participated
 3. Number of bids in each auction: should be sorted by descending order
    and 0 for no bid.
-4. Numbed of auctions participated for each merchandise type 
-    * Number of merchandise by each bidder is always **1**.
-5. Number of devices used
-6. Number of countries bidded from
-    * Percentage of each contry?
-7. Number of ips
-8. Number of url
-9. Bid frequency extracted from time
+4. Numbed of __ by a bidder
+    * auctions participated for each merchandise type 
+    * devices
+    * countries
+    * ips
+    * urls
+    * merchandises (always 1)
+5. Bid frequency extracted from time
     * Bid frequency extracted from time for each **device**
-10. Countries, urls, devices: check the correlation between each label and bot/human
+6. Countries, urls, devices: check the correlation between each label and bot/human
    classification and use the best ~10 countries?
-11. Auction winners(?)
+7. Auction winners(?)
     * Last bidder in a given auction.
-12. Price of the item bidders bid
+8. Price of the item bidders bid
     * Total number of bids in each auction == price of the item
-13. Anomaly behaviors(?)
+9. Anomaly behaviors(?)
     * Repeated bids by one person
 
 ## Problem
