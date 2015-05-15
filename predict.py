@@ -28,6 +28,18 @@ num_bots = bots_info.shape[0]
 num_test = test_info.shape[0]
 num_train = num_human + num_bots
 
+
+# number of bids per auction data (descending)
+bbba = pd.read_csv('data/bots_bids_by_aucs.csv')
+hbba = pd.read_csv('data/human_bids_by_aucs.csv')
+tbba = pd.read_csv('data/test_bids_by_aucs.csv')
+# take the minimum number of auction bidded
+max_auc_count = 4
+max_auc_count = min([bbba.shape[1], hbba.shape[1], tbba.shape[1],
+                     max_auc_count])
+
+
+## TODO: save these empty data in _info.csv files from the beginning
 # merchandise that do not belong to bots
 extra_merchandise = ['merchandise_auto parts', 'merchandise_clothing',
                      'merchandise_furniture']
@@ -44,54 +56,64 @@ test_info = pd.concat([test_info, test_info_append], axis=1).sort(axis=1)
 # train_ids = train_info['bidder_id']
 test_ids = test_info['bidder_id']
 
-# y = np.concatenate([np.zeros(num_human), np.ones(num_bots)], axis=0)
-# X_train = train_info.values[:, 1:]
-# X_test = test_info.values[:, 1:]
+############################################################################
+# Data dropping/appending
+############################################################################
 
-# index_shuffle = range(num_train)
-# np.random.shuffle(index_shuffle)
-# y = y[index_shuffle]
-# X_train = X_train[index_shuffle, :]
+## TODO: just don't save the num_bids_by_auc_ data in _info
+## files. They are saved in _bids_by_aucs.csv files anyway.
 
-# Because number of bots is significantly smaller than number of
-# humans, special care needs to be taken
-
-# # over-sample the bots data
-# multiplicity = num_human/num_bots
-# bots_info_os = [bots_info] * multiplicity
-# train_info = pd.concat([human_info] + bots_info_os, axis=0).sort(axis=1)
-# X_train = train_info.values[:, 1:]
-# y = np.concatenate([np.zeros(num_human), np.ones(num_bots*multiplicity)], axis=0)
-
-# drop unnecessary columns
-# for i in range(10,100):
+# # drop num_bids_by_auc_ columns
+# for i in range(0,100):
 #     human_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
 #     bots_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
 #     test_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+if max_auc_count>0:
+    for key in human_info.keys():
+        if 'num_bids_by_auc' in key:
+            human_info.drop([key], axis=1, inplace=True)
+            bots_info.drop([key], axis=1, inplace=True)
+            test_info.drop([key], axis=1, inplace=True)
 
+    # append num_bids_by_auc_ columns
+    # max_auc_count = 100
+    hbba.fillna(0)
+    bbba.fillna(0)
+    tbba.fillna(0)
+    human_info = pd.concat([human_info, hbba.iloc[:, 1:max_auc_count]], axis=1)
+    bots_info = pd.concat([bots_info,  bbba.iloc[:, 1:max_auc_count]], axis=1)
+    test_info = pd.concat([test_info,  tbba.iloc[:, 1:max_auc_count]], axis=1)
+    
 # columns_dropped = [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips', u'num_urls']
 columns_dropped = [u'num_merchandise']
 human_info.drop(columns_dropped, axis=1, inplace=True)
 bots_info.drop(columns_dropped, axis=1, inplace=True)
 test_info.drop(columns_dropped, axis=1, inplace=True)
 
+# merchandise dummy variables
 # for key in human_info.keys():
 #     if 'merchandise' in key:
 #         human_info.drop([key], axis=1, inplace=True)
 #         bots_info.drop([key], axis=1, inplace=True)
 #         test_info.drop([key], axis=1, inplace=True)
 
+human_info.sort(axis=1)
+bots_info.sort(axis=1)
+test_info.sort(axis=1)
+
+
 # bagging with bootstrap
 vs_cv = []
-for k in range(1,2):
-    num_sim = 100
+for k in range(20, 21):
+    num_sim = 10
     y_probas = []
     valid_score = 0
     for i in range(num_sim):
-        np.random.seed(int(time.time()*1000))
+        np.random.seed(int(time.time()*1000%4294967295))
         y_proba, y_pred, train_proba, train_pred, auc_valid \
-            = predict_usample(num_human, num_bots, human_info, bots_info, test_info,
-                              holdout=0.15, multiplicity=k)
+            = predict_usample(num_human, num_bots, human_info,
+                              bots_info, test_info, holdout=0.,
+                              multiplicity=k)
         y_probas.append(y_proba[:,1])  # gather the bot probabilities
         valid_score += auc_valid
 
@@ -118,3 +140,7 @@ submission = pd.DataFrame(y_proba_ave, index=test_ids, columns=['prediction'])
 submission = pd.concat([submission, submission_append], axis=0)
 submission.to_csv('data/submission.csv', index_label='bidder_id')
 
+
+
+print "bots proba for train set:", num_bots/float(num_human+num_bots)
+print "bots proba for test set: ", sum(y_proba_ave>0.5)/float(len(y_proba_ave))

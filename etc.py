@@ -128,7 +128,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
 
         bots_train = bots_info.iloc[:num_bots_train]
         bots_valid = bots_info.iloc[num_bots_train:]
-
+        
         train_info = pd.concat([human_train, bots_train], axis=0).sort(axis=1)
         valid_info = pd.concat([human_valid, bots_valid], axis=0).sort(axis=1)
     else:
@@ -137,7 +137,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         train_info = pd.concat(
             [human_info.iloc[index_shuffle[:num_human_ext]], bots_info],
             axis=0).sort(axis=1)
-        
+
     X_train = train_info.values[:, 1:].astype(float)
     y = np.concatenate([np.zeros(num_human_train), np.ones(num_bots_train)], axis=0)
 
@@ -151,10 +151,10 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
 
     # Predict!
     print "fitting the model"
-    # clf = RandomForestClassifier(n_estimators=100, n_jobs=4,
-    #                              random_state=1234, verbose=1,
-    #                              max_features='auto')
-    clf = GradientBoostingClassifier()
+    clf = RandomForestClassifier(n_estimators=30, n_jobs=4,
+                                 random_state=1234, verbose=0,
+                                 max_features='auto')
+    # clf = GradientBoostingClassifier()
     # clf = SGDClassifier(loss="log", verbose=1, random_state=1234, n_iter=5000)
     clf.fit(X_train, y)
 
@@ -166,9 +166,11 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     
         valid_proba = clf.predict_proba(X_valid)
         valid_pred = clf.predict(X_valid)
-
-        auc_valid = roc_auc_score(y_valid, valid_pred)
+        
+        auc_valid = roc_auc_score(y_valid, valid_pred) 
         print "validation set auc score: ", auc_valid
+    else:
+        auc_valid = 0.0
         
     # prediction on test set
     y_proba = clf.predict_proba(X_test)
@@ -177,8 +179,9 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     # measuring prediction peformance agianst train set
     train_proba = clf.predict_proba(X_train)
     train_pred = clf.predict(X_train)
-
+    
     auc_train = roc_auc_score(y, train_pred)
     print "training set auc score: ", auc_train
+
     
     return y_proba, y_pred, train_proba, train_pred, auc_valid
