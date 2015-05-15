@@ -11,102 +11,112 @@ import numpy as np
 import pandas as pd
 
 
-# maximum number of auction particpated by one bot == 1018
-# NOTE!! for number of bids for each auction data (sorted in descendent order),
-# I should converge all the bids after a sufficient number of auctions,
-# as most of the bidders only bid less than 500 times. Or categorize them
-# into 1~10 bids, 11~100 bids, etc. The criterial should be chosen by
-# comparing bids by bots and human
+# trainfile = "data/train.csv"
+# testfile = "data/test.csv"
+# bidsfile = "data/bids.csv"
 
-# maximum number of auctions participated by one [human, bot, test]
-max_auc = [1623, 1018, 1726]
-max_auc_count = 100
+# traindata = pd.read_csv(trainfile)
+# bidsdata = pd.read_csv(bidsfile)
+# testdata = pd.read_csv(testfile)
 
+# botdata = traindata[traindata.outcome == 1]
+# humandata = traindata[traindata.outcome == 0]
 
-def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
+num_bots = botdata.shape[0]
 
-    # ANALYSIS
-    tmp_auc = np.zeros((num_bidders, max_auc), dtype=int)
-    tmp = np.zeros((num_bidders, 3), dtype=int)
-    tmp_mch = np.zeros(num_bidders, dtype=object)
+# print "collecting the bids by bots..."
+# bids_bots = []
+# for i in range(num_bots):
+#     bids_bots.append(bidsdata[bidsdata.bidder_id == botdata.iloc[i, 0]])
+# bids_bots = pd.concat(bids_bots)
 
-    # for each bidder
-    for i in range(num_bidders):
-        if i%10 == 0:
-            print "%d/%d" %(i, num_bidders)
-        # bids by this bidder
-        bbbidder = bids[bids['bidder_id'] == class_id[i]]
+# print "collecting the bids by human..."
+# bids_human = []
+num_humans = humandata.shape[0]
+# for j in range(num_humans):
+#     bids_human.append(bidsdata[bidsdata.bidder_id == humandata.iloc[j, 0]])
+# bids_human = pd.concat(bids_human)
 
-        # number of bids by this bidder
-        num_bbbidder = len(bbbidder)
-        # number of auction by this bidder
-        num_abbidder = len(bbbidder['auction'].unique())
+# print "collecting the bids from test data (not sure human or bots)..."
+# bids_test = []
+# num_test = testdata.shape[0]
+# for j in range(num_test):
+#     bids_test.append(bidsdata[bidsdata.bidder_id == testdata.iloc[j, 0]])
+# bids_test = pd.concat(bids_test)
 
-        # count number of bids for each auction
-        nbfea = []
-        for auc in bbbidder['auction'].unique():
-            nbfea.append(len(bbbidder[bbbidder['auction'] == auc]))
-
-        tmp_auc[i, :len(nbfea)] = sorted(nbfea, reverse=True)
-        # NOTE: each bidder only has ONE unique merchandise, check
-        # num_merchandise attribute
-        tmp_mch[i] = bbbidder['merchandise'].unique()[0]
-
-        tmp[i, 0] = num_bbbidder
-        tmp[i, 1] = num_abbidder
-        tmp[i, 2] = len(bbbidder['merchandise'].unique())
-
-    bidders_mch = pd.get_dummies(pd.DataFrame(tmp_mch, index=class_id,
-                                              columns=['merchandise']))
-    bidders_info = pd.DataFrame(tmp, index=class_id,
-                                columns=list(['num_bids',
-                                              'num_aucs',
-                                              'num_merchandise']))
-    bidders_bids_by_aucs = pd.DataFrame(
-        tmp_auc, index=class_id,
-        columns=map(lambda x: 'num_bids_by_auc_'+str(x), range(max_auc)))
-
-    bidders_info = pd.concat([bidders_info, bidders_mch,
-                              bidders_bids_by_aucs.iloc[:, :max_auc_count]],
-                             axis=1)
-
-    return bidders_info, bidders_bids_by_aucs
+# print "saving bids data..."
+# bids_bots.to_csv('bids_bots.csv')
+# bids_human.to_csv('bids_human.csv')
+# bids_test.to_csv('bids_test.csv')
 
 
-# print "Loading bids data..."
-# bids_bots = pd.read_csv('data/bids_bots.csv')
-# bids_human = pd.read_csv('data/bids_human.csv')
+bids_bots = pd.read_csv('bids_bots.csv')
+bids_human = pd.read_csv('bids_human.csv')
+bids_test = pd.read_csv('bids_test.csv')
 
-# bots_id = (bids_bots['bidder_id']).unique()
-# human_id = (bids_human['bidder_id']).unique()
+# train classes
+outcome = np.concatenate((np.ones(num_bots), np.zeros(num_humans)))
 
-# num_bots = len(bots_id)
-# num_human = len(human_id)
+bids_train = pd.concat([bids_bots, bids_human])
 
-bids_test = pd.read_csv('data/bids_test.csv')
-test_id = bids_test['bidder_id'].unique()
-num_test = len(test_id)
+# drop useless-looking labels
+bidder_ids_train = bids_train['bidder_id']
+bidder_ids_test = bids_test['bidder_id']
+bids_train = bids_train.drop(['bid_id', 'bidder_id', 'ip'], axis=1)
+bids_test = bids_test.drop(['bid_id', 'bidder_id', 'ip'], axis=1)
 
-# print "Analysing bots data..."
+# same data pre-analysis
 
-# bots_info, bots_bids_by_aucs\
-#     = gather_info(num_bots, max_auc[1], max_auc_count, bids_bots, bots_id)
+bids_train.keys()
+#  ['auction', 'merchandise', 'device', 'time', 'country', 'url']
 
-# bots_info.to_csv('data/bots_info.csv', index_label='bidder_id')
-# bots_bids_by_aucs.to_csv('data/bots_bids_by_aucs.csv', index_label='bidder_id')
+num_train = bids_train.shape[0]          # 3071224
+len(bids_train['auction'].unique())      # 12740
+len(bids_train['merchandise'].unique())  # 10
+len(bids_train['device'].unique())       # 5729
+len(bids_train['time'].unique())         # 742669
+len(bids_train['country'].unique())      # 199
+len(bids_train['url'].unique())          # 663873
 
-# print "Analysing huaman data..."
+# brute-force dummy labeling will create 1,425,220 labels
+# time can be categorize into smaller groups?
+# cluster the dataset using some unsupervised learning technique?
 
-# human_info, human_bids_by_aucs\
-#     = gather_info(num_human, max_auc[0], max_auc_count, bids_human, human_id)
+# first try with smaller data sets
+bids_train_small = bids_train.drop(['auction', 'device', 'time', 'url'], axis=1)
+bids_test_small = bids_test.drop(['auction', 'device', 'time', 'url'], axis=1)
 
-# human_info.to_csv('data/human_info.csv', index_label='bidder_id')
-# human_bids_by_aucs.to_csv('data/human_bids_by_aucs.csv', index_label='bidder_id')
+# create dummy labels
+dummies = []
+for key in bids_train_small.keys():
+    dummies.append(pd.get_dummies(bids_train_small[key]))
+bids_train_dummies = pd.concat(dummies, axis=1)
+bids_train_dummies.to_csv('bids_train_dummies.csv')
 
-print "Analysing test data..."
+dummies = []
+for key in bids_test_small.keys():
+    dummies.append(pd.get_dummies(bids_test_small[key]))
+bids_test_dummies = pd.concat(dummies, axis=1)
+bids_test_dummies.to_csv('bids_test_dummies.csv')
 
-test_info, test_bids_by_aucs\
-    = gather_info(num_test, max_auc[2], max_auc_count, bids_test, test_id)
+# SGD (stochstic gradient descent classifier) with logloss
+# from sklearn.linear_model import SGDClassifier
 
-test_info.to_csv('data/test_info.csv', index_label='bidder_id')
-test_bids_by_aucs.to_csv('data/test_bids_by_aucs.csv', index_label='bidder_id')
+# clf = SGDClassifier(loss="log", verbose=1, random_state=1234)
+# clf.fit(bids_train_dummies, outcome)
+# >>> clf.predict_proba([[1., 1.]])
+
+
+# label encoding - dummy variables?
+# ref: http://fastml.com/converting-categorical-data-into-numbers-with-pandas-and-scikit-learn/
+# http://stackoverflow.com/questions/25530504/encoding-column-labels-in-pandas-for-machine-learning
+
+# large number of sparse labels classification
+# http://research.microsoft.com/en-us/um/people/manik/pubs%5Cagrawal13.pdf
+# http://jmlr.org/proceedings/papers/v32/yu14.pdf
+
+# Idea 1: classify the bidder by useful-looking labels: auction,
+# merchandise, device, time, country, url
+
+# Idea 2: cluster the bids by their information and use them as a
+# classifier?

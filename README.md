@@ -13,7 +13,7 @@
 ## Observations
 
 * UNBALANCED SAMPLES!!! The number of bots are far fewer than number
-  of human. Algorithm needs to accomodate this unbalanced-ness.
+  of human. Algorithm needs to accommodate this unbalanced-ness.
     * http://stats.stackexchange.com/questions/17225/when-over-under-sampling-unbalanced-classes-does-maximizing-accuracy-differ-fro
     * http://www.reddit.com/r/MachineLearning/comments/12evgi/classification_when_80_of_my_training_set_is_of/
 * Number of bids done by bidders in training data: 3071224
@@ -32,7 +32,7 @@
     referred.
 * There are bidders (both in train.csv, test.csv) that do not have any
   bids in bids.csv.
-* Number of merchandies by the same bidder is always **1**.
+* Number of merchandises by the same bidder is always **1**.
 
 
 ## Second strategy
@@ -44,8 +44,8 @@ Useful information to be extracted:
 3. Number of bids in each auction: should be sorted by descending order
    and 0 for no bid.
 4. Bid frequency extracted from time
-    * Bid freqnency extracted from time for each **device**
-5. Numbef of auctions participated for each merchandise type 
+    * Bid frequency extracted from time for each **device**
+5. Numbed of auctions participated for each merchandise type 
     * Number of merchandise by each bidder is always **1**.
 6. Number of devices used
 7. Countries, urls, devices: check the correlation between each label and bot/human
@@ -57,9 +57,9 @@ Useful information to be extracted:
 10. Anomaly behaviors(?)
     * Repeated bids by one person
 
-## Problesm
+## Problem
 
-1. Generating dummy vaiables take up a large amount of memory.
+1. Generating dummy variables take up a large amount of memory.
     * Brute-force dummy labeling will create 1,425,220 labels
 
 
