@@ -104,17 +104,38 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 
 
 
-def predict_usample(num_human, num_bots, human_info, bots_info, test_info):
+def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
+                    holdout=0.0):
     
     # under-sample the human data
     num_human_ext = min(num_bots*10, num_human)
     index_shuffle = range(num_human)
     np.random.shuffle(index_shuffle)
-    train_info = pd.concat(
-        [human_info.iloc[index_shuffle[:num_human_ext]], bots_info],
-        axis=0).sort(axis=1)
+
+    if holdout>0.0:
+        num_human_train = int(num_human_ext*(1-holdout))
+        num_human_valid = num_human_ext-num_human_train
+
+        human_train = human_info.iloc[index_shuffle[:num_human_train]]
+        human_valid = human_info.iloc[index_shuffle[num_human_train:num_human_ext]]
+
+        num_bots_train = int(num_bots*(1-holdout))
+        num_bots_valid = num_bots-num_bots_train
+
+        bots_train = bots_info.iloc[:num_bots_train]
+        bots_valid = bots_info.iloc[num_bots_train:]
+
+        train_info = pd.concat([human_train, bots_train], axis=0).sort(axis=1)
+        valid_info = pd.concat([human_valid, bots_valid], axis=0).sort(axis=1)
+    else:
+        num_human_train = num_human_ext
+        num_bots_train = num_bots
+        train_info = pd.concat(
+            [human_info.iloc[index_shuffle[:num_human_ext]], bots_info],
+            axis=0).sort(axis=1)
+        
     X_train = train_info.values[:, 1:].astype(float)
-    y = np.concatenate([np.zeros(num_human_ext), np.ones(num_bots)], axis=0)
+    y = np.concatenate([np.zeros(num_human_train), np.ones(num_bots_train)], axis=0)
 
     # shuffle!
     index_shuffle = range(len(y))
@@ -133,6 +154,17 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info):
     # clf = SGDClassifier(loss="log", verbose=1, random_state=1234, n_iter=5000)
     clf.fit(X_train, y)
 
+    # prediction on the validation set
+    if holdout > 0.0:
+        X_valid = valid_info.values[:, 1:].astype(float)
+        y_valid = np.concatenate(
+            [np.zeros(num_human_valid), np.ones(num_bots_valid)], axis=0)
+    
+        valid_proba = clf.predict_proba(X_valid)
+        valid_pred = clf.predict(X_valid)
+
+        print "validation set auc score: ", roc_auc_score(y_valid, valid_pred)
+        
     # prediction on test set
     y_proba = clf.predict_proba(X_test)
     y_pred = clf.predict(X_test)

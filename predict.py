@@ -63,16 +63,16 @@ test_ids = test_info['bidder_id']
 # y = np.concatenate([np.zeros(num_human), np.ones(num_bots*multiplicity)], axis=0)
 
 # drop unnecessary columns
-for i in range(100):
-    human_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
-    bots_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
-    test_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+# for i in range(100):
+#     human_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+#     bots_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
+#     test_info.drop(['num_bids_by_auc_%d' %i], axis=1, inplace=True)
 
 # columns_dropped = [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips', u'num_urls']
-columns_dropped = [u'num_merchandise']
-human_info.drop(columns_dropped, axis=1, inplace=True)
-bots_info.drop(columns_dropped, axis=1, inplace=True)
-test_info.drop(columns_dropped, axis=1, inplace=True)
+# columns_dropped = [u'num_merchandise']
+# human_info.drop(columns_dropped, axis=1, inplace=True)
+# bots_info.drop(columns_dropped, axis=1, inplace=True)
+# test_info.drop(columns_dropped, axis=1, inplace=True)
 
 # for key in human_info.keys():
 #     if 'merchandise' in key:
@@ -84,7 +84,8 @@ test_info.drop(columns_dropped, axis=1, inplace=True)
 y_probas = []
 for i in range(1):
     y_proba, y_pred, train_proba, train_pred \
-        = predict_usample(num_human, num_bots, human_info, bots_info, test_info)
+        = predict_usample(num_human, num_bots, human_info, bots_info, test_info,
+                          holdout=0.1)
     y_probas.append(y_proba[:,1])  # gather the bot probabilities
 
 y_probas = np.array(y_probas)
@@ -104,4 +105,3 @@ submission = pd.DataFrame(y_proba_ave, index=test_ids, columns=['prediction'])
 submission = pd.concat([submission, submission_append], axis=0)
 submission.to_csv('data/submission.csv', index_label='bidder_id')
 
-print sum(y_pred)/float(len(y_proba_ave))
