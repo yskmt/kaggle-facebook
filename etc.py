@@ -117,7 +117,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     num_human_ext = min(num_bots * multiplicity, num_human)
     index_shuffle = range(num_human)
     np.random.shuffle(index_shuffle)
-
+    
     if holdout > 0.0:
         num_human_train = int(num_human_ext * (1 - holdout))
         num_human_valid = num_human_ext - num_human_train

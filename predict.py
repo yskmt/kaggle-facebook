@@ -77,65 +77,104 @@ human_info.sort(axis=1)
 bots_info.sort(axis=1)
 test_info.sort(axis=1)
 
+human_data = human_info.values
+bots_data = bots_info.values
+test_data = test_info.values
 
-# bagging with bootstrap
-score_cv = []
-std_cv = []
-br_mean = []
-br_std = []
-y_valids = []
-holdout = 0.0
-# ks = range(1,18,4)
-ks = range(5, 9)
-# for k in range(1, 18, 4):
-for k in ks:
-    num_sim = 25
-    y_probas = []
-    ras = []
-    for i in range(num_sim):
-        np.random.seed(int(time.time() * 1000 % 4294967295))
-        y_proba, y_pred, train_proba, train_pred, roc_auc \
-            = predict_usample(num_human, num_bots, human_info,
-                              bots_info, test_info, holdout=holdout,
-                              multiplicity=k)
-        y_probas.append(y_proba[:, 1])  # gather the bot probabilities
-        ras.append(roc_auc)
+train_data = np.vstack((human_data, bots_data))
+y_train = np.hstack((np.zeros(num_human), np.ones(num_bots)))
 
-    # postprocessing
-    y_probas = np.array(y_probas)
-    y_proba_ave = y_probas.T.mean(axis=1)
+num_train = train_data.shape[0]
 
-    brs = np.sum(y_probas > 0.5, axis=1) / \
-        np.array(map(len, y_probas), dtype=float)
-    br_mean.append(brs.mean())
-    br_std.append(brs.std())
+ins = range(num_train)
+np.random.shuffle(ins)
 
-    ras = np.array(ras)
-    score_cv.append(ras.mean())
-    std_cv.append(ras.std())
+X_train = train_data[ins, :]
+y_train = y_train[ins]
 
-    print "k: ", k
-    print "bots proba for test set: ", brs.mean()
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
-np.set_printoptions(suppress=True, precision=3)
-print "CV result:"
-print np.round(np.array([ks, score_cv, std_cv, br_mean, br_std]), 3)
+clf = RandomForestClassifier(n_estimators=100, n_jobs=2,
+                                 random_state=1234, verbose=0,
+                                 max_features='auto')
+
+ntr = int(num_train*0.8)
+nts = num_train-ntr
+
+clf.fit(X_train[:ntr, :], y_train[:ntr])
+y_proba = clf.predict_proba(X_train[ntr:, :])
+y_pred  = clf.predict(X_train[ntr:, :])
+y_valid = y_train[ntr:]
+
+fpr, tpr, thresholds = roc_curve(y_train[ntr:], y_proba[:, 1])
+roc_auc = auc(fpr, tpr)
 
 
-# 70 bidders in test.csv do not have any data in bids.csv. Thus they
-# are not included in analysis/prediction, but they need to be
-# appended in the submission. The prediction of these bidders do not matter.
+def specificity(y_true, y_pred):
 
-test_ids_all = pd.read_csv('data/test.csv')['bidder_id']
-test_ids_append = list(
-    set(test_ids_all.values).difference(set(test_ids.values)))
-submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
-                                 index=test_ids_append, columns=['prediction'])
+    positive = sum(y_true)
+    true_positive = sum(np.logical_and(y_pred==1, y_valid==1))
 
-# Make as submission file!
-submission = pd.DataFrame(y_proba_ave, index=test_ids, columns=['prediction'])
-submission = pd.concat([submission, submission_append], axis=0)
-submission.to_csv('data/submission.csv', index_label='bidder_id')
+    return true_positive/float(positive)
+    
+# # bagging with bootstrap
+# score_cv = []
+# std_cv = []
+# br_mean = []
+# br_std = []
+# y_valids = []
+# holdout = 0.0
+# # ks = range(1,18,4)
+# ks = range(5, 9)
+# # for k in range(1, 18, 4):
+# for k in ks:
+#     num_sim = 25
+#     y_probas = []
+#     ras = []
+#     for i in range(num_sim):
+#         np.random.seed(int(time.time() * 1000 % 4294967295))
+#         y_proba, y_pred, train_proba, train_pred, roc_auc \
+#             = predict_usample(num_human, num_bots, human_info,
+#                               bots_info, test_info, holdout=holdout,
+#                               multiplicity=k)
+#         y_probas.append(y_proba[:, 1])  # gather the bot probabilities
+#         ras.append(roc_auc)
 
-print "bots proba for train set:", num_bots / float(num_human + num_bots)
-print "bots proba for test set: ", sum(y_proba_ave > 0.5) / float(len(y_proba_ave))
+#     # postprocessing
+#     y_probas = np.array(y_probas)
+#     y_proba_ave = y_probas.T.mean(axis=1)
+
+#     brs = np.sum(y_probas > 0.5, axis=1) / \
+#         np.array(map(len, y_probas), dtype=float)
+#     br_mean.append(brs.mean())
+#     br_std.append(brs.std())
+
+#     ras = np.array(ras)
+#     score_cv.append(ras.mean())
+#     std_cv.append(ras.std())
+
+#     print "k: ", k
+#     print "bots proba for test set: ", brs.mean()
+
+# np.set_printoptions(suppress=True, precision=3)
+# print "CV result:"
+# print np.round(np.array([ks, score_cv, std_cv, br_mean, br_std]), 3)
+
+
+# # 70 bidders in test.csv do not have any data in bids.csv. Thus they
+# # are not included in analysis/prediction, but they need to be
+# # appended in the submission. The prediction of these bidders do not matter.
+
+# test_ids_all = pd.read_csv('data/test.csv')['bidder_id']
+# test_ids_append = list(
+#     set(test_ids_all.values).difference(set(test_ids.values)))
+# submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
+#                                  index=test_ids_append, columns=['prediction'])
+
+# # Make as submission file!
+# submission = pd.DataFrame(y_proba_ave, index=test_ids, columns=['prediction'])
+# submission = pd.concat([submission, submission_append], axis=0)
+# submission.to_csv('data/submission.csv', index_label='bidder_id')
+
+# print "bots proba for train set:", num_bots / float(num_human + num_bots)
+# print "bots proba for test set: ", sum(y_proba_ave > 0.5) / float(len(y_proba_ave))
