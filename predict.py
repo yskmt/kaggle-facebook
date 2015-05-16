@@ -84,7 +84,11 @@ std_cv = []
 br_mean = []
 br_std = []
 y_valids = []
-for k in range(1, 18, 4):
+holdout = 0.0
+# ks = range(1,18,4)
+ks = range(5, 9)
+# for k in range(1, 18, 4):
+for k in ks:
     num_sim = 25
     y_probas = []
     ras = []
@@ -92,7 +96,7 @@ for k in range(1, 18, 4):
         np.random.seed(int(time.time() * 1000 % 4294967295))
         y_proba, y_pred, train_proba, train_pred, roc_auc \
             = predict_usample(num_human, num_bots, human_info,
-                              bots_info, test_info, holdout=0.2,
+                              bots_info, test_info, holdout=holdout,
                               multiplicity=k)
         y_probas.append(y_proba[:, 1])  # gather the bot probabilities
         ras.append(roc_auc)
@@ -115,7 +119,7 @@ for k in range(1, 18, 4):
 
 np.set_printoptions(suppress=True, precision=3)
 print "CV result:"
-print np.round(np.array([range(1,18,4), score_cv, std_cv, br_mean, br_std]), 3)
+print np.round(np.array([ks, score_cv, std_cv, br_mean, br_std]), 3)
 
 
 # 70 bidders in test.csv do not have any data in bids.csv. Thus they
@@ -132,7 +136,6 @@ submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
 submission = pd.DataFrame(y_proba_ave, index=test_ids, columns=['prediction'])
 submission = pd.concat([submission, submission_append], axis=0)
 submission.to_csv('data/submission.csv', index_label='bidder_id')
-
 
 print "bots proba for train set:", num_bots / float(num_human + num_bots)
 print "bots proba for test set: ", sum(y_proba_ave > 0.5) / float(len(y_proba_ave))

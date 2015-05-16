@@ -154,7 +154,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     X_test = test_info.values[:, :]
 
     # Predict!
-    print "fitting the model"
+    # print "fitting the model"
     clf = RandomForestClassifier(n_estimators=100, n_jobs=2,
                                  random_state=1234, verbose=0,
                                  max_features='auto')
@@ -196,7 +196,8 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     else:
         auc_valid = 0.0
         y_valid = 0.0
-
+        roc_auc = 0.0
+        
     # prediction on test set
     y_proba = clf.predict_proba(X_test)
     y_pred = clf.predict(X_test)
