@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
 
+from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
@@ -140,7 +141,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
             [human_info.iloc[index_shuffle[:num_human_ext]], bots_info],
             axis=0).sort(axis=1)
 
-    X_train = train_info.values[:, 1:].astype(float)
+    X_train = train_info.values[:, :].astype(float)
     y = np.concatenate(
         [np.zeros(num_human_train), np.ones(num_bots_train)], axis=0)
 
@@ -150,22 +151,28 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     X_train = X_train[index_shuffle]
     y = y[index_shuffle]
 
-    X_test = test_info.values[:, 1:]
+    X_test = test_info.values[:, :]
 
     # Predict!
     print "fitting the model"
-    clf = RandomForestClassifier(n_estimators=30, n_jobs=2,
+    clf = RandomForestClassifier(n_estimators=100, n_jobs=2,
                                  random_state=1234, verbose=0,
                                  max_features='auto')
     # clf = GradientBoostingClassifier()
     # clf = SGDClassifier(loss="log", verbose=1, random_state=1234, n_iter=5000)
+    # clf = LogisticRegression()
     clf.fit(X_train, y)
 
     # prediction on the validation set
     if holdout > 0.0:
-        X_valid = valid_info.values[:, 1:].astype(float)
+        X_valid = valid_info.values[:, :].astype(float)
         y_valid = np.concatenate(
             [np.zeros(num_human_valid), np.ones(num_bots_valid)], axis=0)
+
+        insh = range(len(y_valid))
+        np.random.shuffle(insh)
+        X_valid = X_valid[insh]
+        y_valid = y_valid[insh]
 
         valid_proba = clf.predict_proba(X_valid)
         valid_pred = clf.predict(X_valid)
@@ -173,7 +180,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         fpr, tpr, thresholds = roc_curve(y_valid, valid_proba[:, 1])
         roc_auc = auc(fpr, tpr)
         print "Area under the ROC curve : %f" % roc_auc
-
+        
         if plot_roc:
             # Plot ROC curve
             plt.clf()

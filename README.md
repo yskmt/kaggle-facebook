@@ -73,3 +73,21 @@ Useful information to be extracted:
 * time can be categorize into smaller groups?
 * cluster the dataset using some unsupervised learning technique?
 
+
+## CV results
+
+holdout=0.1
+[[  1.      5.      9.     13.     17.   ]
+ [  0.933   0.946   0.941   0.949   0.944]
+ [  0.062   0.021   0.017   0.012   0.007]
+ [  0.221   0.068   0.049   0.037   0.035]
+ [  0.053   0.026   0.025   0.014   0.018]]
+
+holdout=0.2
+[[  1.      5.      9.     13.     17.   ]
+ [  0.914   0.917   0.913   0.91    0.907]
+ [  0.035   0.019   0.018   0.014   0.014]
+ [  0.195   0.069   0.036   0.025   0.024]
+ [  0.048   0.029   0.025   0.012   0.017]]
+
+holdout=0.0 --> multiplicity=8?

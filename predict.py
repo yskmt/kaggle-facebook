@@ -35,10 +35,9 @@ hbba = pd.read_csv('data/human_bids_by_aucs.csv', index_col=0)
 tbba = pd.read_csv('data/test_bids_by_aucs.csv', index_col=0)
 
 # take the minimum number of auction bidded
-max_auc_count = 10
+max_auc_count = 100
 max_auc_count = min([bbba.shape[1], hbba.shape[1], tbba.shape[1],
                      max_auc_count])
-
 
 
 ####
@@ -60,7 +59,8 @@ if max_auc_count > 0:
     test_info = pd.concat([test_info,  tbba.iloc[:, :max_auc_count]], axis=1)
 
 
-# drop: [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips', u'num_urls']
+# drop: [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips',
+# u'num_urls']
 columns_dropped = [u'num_merchandise']
 human_info.drop(columns_dropped, axis=1, inplace=True)
 bots_info.drop(columns_dropped, axis=1, inplace=True)
@@ -80,28 +80,43 @@ test_info.sort(axis=1)
 
 # bagging with bootstrap
 score_cv = []
+std_cv = []
+br_mean = []
+br_std = []
 y_valids = []
-for k in range(11, 12):
-    num_sim = 100
+for k in range(1, 18, 4):
+    num_sim = 25
     y_probas = []
-    roc_auc_ave = 0
+    ras = []
     for i in range(num_sim):
         np.random.seed(int(time.time() * 1000 % 4294967295))
         y_proba, y_pred, train_proba, train_pred, roc_auc \
             = predict_usample(num_human, num_bots, human_info,
-                              bots_info, test_info, holdout=0.1,
+                              bots_info, test_info, holdout=0.2,
                               multiplicity=k)
         y_probas.append(y_proba[:, 1])  # gather the bot probabilities
-        roc_auc_ave += roc_auc
+        ras.append(roc_auc)
 
-    # print "valid score: ", roc_auc_ave/float(num_sim)
-    score_cv.append(roc_auc_ave / float(num_sim))
+    # postprocessing
+    y_probas = np.array(y_probas)
+    y_proba_ave = y_probas.T.mean(axis=1)
 
+    brs = np.sum(y_probas > 0.5, axis=1) / \
+        np.array(map(len, y_probas), dtype=float)
+    br_mean.append(brs.mean())
+    br_std.append(brs.std())
+
+    ras = np.array(ras)
+    score_cv.append(ras.mean())
+    std_cv.append(ras.std())
+
+    print "k: ", k
+    print "bots proba for test set: ", brs.mean()
+
+np.set_printoptions(suppress=True, precision=3)
 print "CV result:"
-print score_cv
+print np.round(np.array([range(1,18,4), score_cv, std_cv, br_mean, br_std]), 3)
 
-y_probas = np.array(y_probas)
-y_proba_ave = y_probas.T.mean(axis=1)
 
 # 70 bidders in test.csv do not have any data in bids.csv. Thus they
 # are not included in analysis/prediction, but they need to be
