@@ -2,14 +2,14 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
+import time
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
 
-bids_test = pd.read_csv('data/bids_test.csv')
-
+# bids_test = pd.read_csv('data/bids_test.csv')
 
 def get_max_auc(bids):
 
@@ -107,12 +107,26 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
     return bidders_info, bidders_bids_by_aucs
 
 
+def get_specificity(y_true, y_pred):
+    """
+    Determine the specificity (true positive rate)
+    := true_positive/positive
+    """
+    
+    positive = sum(y_true)
+    true_positive = sum(np.logical_and(y_pred==1, y_true==1))
+
+    return true_positive/float(positive)
+
+
+
 def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
                     holdout=0.0, multiplicity=5, plot_roc=False):
     '''
     multiplicity: ratio of human to bots in training set
     '''
-
+    np.random.seed(int(time.time() * 1000 % 4294967295))
+    
     # under-sample the human data
     num_human_ext = min(num_bots * multiplicity, num_human)
     index_shuffle = range(num_human)
@@ -157,7 +171,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     # print "fitting the model"
     clf = RandomForestClassifier(n_estimators=100, n_jobs=2,
                                  random_state=1234, verbose=0,
-                                 max_features='auto')
+                                 max_features='auto', criterion='gini')
     # clf = GradientBoostingClassifier()
     # clf = SGDClassifier(loss="log", verbose=1, random_state=1234, n_iter=5000)
     # clf = LogisticRegression()
@@ -174,12 +188,15 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         X_valid = X_valid[insh]
         y_valid = y_valid[insh]
 
-        valid_proba = clf.predict_proba(X_valid)
-        valid_pred = clf.predict(X_valid)
-
-        fpr, tpr, thresholds = roc_curve(y_valid, valid_proba[:, 1])
+        y_valid_proba = clf.predict_proba(X_valid)
+        y_valid_pred = clf.predict(X_valid)
+        specificity = get_specificity(y_valid, y_valid_pred)
+        
+        print "TPR: ", specificity
+        
+        fpr, tpr, thresholds = roc_curve(y_valid, y_valid_proba[:, 1])
         roc_auc = auc(fpr, tpr)
-        print "Area under the ROC curve : %f" % roc_auc
+        # print "Area under the ROC curve : %f" % roc_auc
         
         if plot_roc:
             # Plot ROC curve
@@ -197,6 +214,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         auc_valid = 0.0
         y_valid = 0.0
         roc_auc = 0.0
+        specificity = 0.0
         
     # prediction on test set
     y_proba = clf.predict_proba(X_test)
@@ -206,4 +224,4 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     train_proba = clf.predict_proba(X_train)
     train_pred = clf.predict(X_train)
 
-    return y_proba, y_pred, train_proba, train_pred, roc_auc
+    return y_proba, y_pred, train_proba, train_pred, roc_auc, specificity

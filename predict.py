@@ -35,7 +35,7 @@ hbba = pd.read_csv('data/human_bids_by_aucs.csv', index_col=0)
 tbba = pd.read_csv('data/test_bids_by_aucs.csv', index_col=0)
 
 # take the minimum number of auction bidded
-max_auc_count = 100
+max_auc_count = 1500
 max_auc_count = min([bbba.shape[1], hbba.shape[1], tbba.shape[1],
                      max_auc_count])
 
@@ -84,23 +84,32 @@ std_cv = []
 br_mean = []
 br_std = []
 y_valids = []
-holdout = 0.0
-# ks = range(1,18,4)
-ks = range(5, 9)
-# for k in range(1, 18, 4):
+spec_mean = []
+spec_std = []
+holdout = 0.2
+ks = range(1,18,4)
+# ks = range(1,2)
 for k in ks:
-    num_sim = 25
+    num_sim = 100
     y_probas = []
     ras = []
+    tprs = []
     for i in range(num_sim):
         np.random.seed(int(time.time() * 1000 % 4294967295))
-        y_proba, y_pred, train_proba, train_pred, roc_auc \
+
+        y_proba, y_pred, train_proba, train_pred, roc_auc, tpr \
             = predict_usample(num_human, num_bots, human_info,
                               bots_info, test_info, holdout=holdout,
                               multiplicity=k)
+        
         y_probas.append(y_proba[:, 1])  # gather the bot probabilities
         ras.append(roc_auc)
+        tprs.append(tpr)
 
+    tprs = np.array(tprs)
+    spec_mean.append(tprs.mean())
+    spec_std.append(tprs.std())
+        
     # postprocessing
     y_probas = np.array(y_probas)
     y_proba_ave = y_probas.T.mean(axis=1)
@@ -119,7 +128,8 @@ for k in ks:
 
 np.set_printoptions(suppress=True, precision=3)
 print "CV result:"
-print np.round(np.array([ks, score_cv, std_cv, br_mean, br_std]), 3)
+print np.round(np.array([ks, score_cv, std_cv, br_mean, br_std,
+                         spec_mean, spec_std]), 3)
 
 
 # 70 bidders in test.csv do not have any data in bids.csv. Thus they
