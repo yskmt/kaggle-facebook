@@ -126,9 +126,12 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     multiplicity: ratio of human to bots in training set
     '''
     np.random.seed(int(time.time() * 1000 % 4294967295))
+
+    # multiplicity *= (1+(np.random.random()-0.5)/5.0)
+    # holdout *= (1+(np.random.random()-0.5)/5.0) 
     
     # under-sample the human data
-    num_human_ext = min(num_bots * multiplicity, num_human)
+    num_human_ext = int(min(num_bots * multiplicity, num_human))
     index_shuffle = range(num_human)
     np.random.shuffle(index_shuffle)
 
@@ -171,7 +174,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     # print "fitting the model"
     clf = RandomForestClassifier(n_estimators=100, n_jobs=2,
                                  random_state=1234, verbose=0,
-                                 max_features='auto', criterion='gini')
+                                 max_features='auto')
     # clf = GradientBoostingClassifier()
     # clf = SGDClassifier(loss="log", verbose=1, random_state=1234, n_iter=5000)
     # clf = LogisticRegression()
@@ -197,6 +200,8 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         fpr, tpr, thresholds = roc_curve(y_valid, y_valid_proba[:, 1])
         roc_auc = auc(fpr, tpr)
         # print "Area under the ROC curve : %f" % roc_auc
+
+        score_valid = clf.score(X_valid, y_valid)
         
         if plot_roc:
             # Plot ROC curve
@@ -215,6 +220,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         y_valid = 0.0
         roc_auc = 0.0
         specificity = 0.0
+        score_valid = 0.0
         
     # prediction on test set
     y_proba = clf.predict_proba(X_test)
@@ -224,4 +230,4 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     train_proba = clf.predict_proba(X_train)
     train_pred = clf.predict(X_train)
 
-    return y_proba, y_pred, train_proba, train_pred, roc_auc, specificity
+    return y_proba, y_pred, train_proba, train_pred, roc_auc, specificity, score_valid

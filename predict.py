@@ -59,14 +59,15 @@ if max_auc_count > 0:
     test_info = pd.concat([test_info,  tbba.iloc[:, :max_auc_count]], axis=1)
 
 
-# drop: [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips',
-# u'num_urls']
-columns_dropped = [u'num_merchandise']
-human_info.drop(columns_dropped, axis=1, inplace=True)
-bots_info.drop(columns_dropped, axis=1, inplace=True)
-test_info.drop(columns_dropped, axis=1, inplace=True)
+# drop num item labels
+# columns_dropped = [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips',
+#                    u'num_urls'] + ['num_aucs']
+# # columns_dropped = [u'num_merchandise']
+# human_info.drop(columns_dropped, axis=1, inplace=True)
+# bots_info.drop(columns_dropped, axis=1, inplace=True)
+# test_info.drop(columns_dropped, axis=1, inplace=True)
 
-# drop merchandise dummy variables
+# # drop merchandise dummy variables
 # for key in human_info.keys():
 #     if 'merchandise' in key:
 #         human_info.drop([key], axis=1, inplace=True)
@@ -78,59 +79,78 @@ bots_info.sort(axis=1)
 test_info.sort(axis=1)
 
 
+############################################################################
+# Predicting: Random Forest with bagging
+############################################################################
+
 # bagging with bootstrap
-score_cv = []
-std_cv = []
-br_mean = []
-br_std = []
 y_valids = []
-spec_mean = []
-spec_std = []
-holdout = 0.2
-ks = range(1,18,4)
-# ks = range(1,2)
+roc_auc_mean = []
+roc_auc_std = []
+bots_rate_mean = []
+bots_rate_std = []
+specificity_mean = []
+specificity_std = []
+score_mean = []
+score_std = []
+holdout = 0.0
+# ks = range(1,18,4)
+ks = range(1, 2)
 for k in ks:
-    num_sim = 100
+    num_sim = 200
     y_probas = []
-    ras = []
+    roc_aucs = []
     tprs = []
+    scovs = []
     for i in range(num_sim):
         np.random.seed(int(time.time() * 1000 % 4294967295))
 
-        y_proba, y_pred, train_proba, train_pred, roc_auc, tpr \
+        y_proba, y_pred, train_proba, train_pred, roc_auc, tpr, scov\
             = predict_usample(num_human, num_bots, human_info,
                               bots_info, test_info, holdout=holdout,
                               multiplicity=k)
-        
+
         y_probas.append(y_proba[:, 1])  # gather the bot probabilities
-        ras.append(roc_auc)
+        roc_aucs.append(roc_auc)
         tprs.append(tpr)
+        scovs.append(scov)
 
     tprs = np.array(tprs)
-    spec_mean.append(tprs.mean())
-    spec_std.append(tprs.std())
-        
+    specificity_mean.append(tprs.mean())
+    specificity_std.append(tprs.std())
+
+    scovs = np.array(scovs)
+    score_mean.append(scovs.mean())
+    score_std.append(scovs.std())
+
     # postprocessing
     y_probas = np.array(y_probas)
     y_proba_ave = y_probas.T.mean(axis=1)
 
-    brs = np.sum(y_probas > 0.5, axis=1) / \
+    bots_rates = np.sum(y_probas > 0.5, axis=1) / \
         np.array(map(len, y_probas), dtype=float)
-    br_mean.append(brs.mean())
-    br_std.append(brs.std())
+    bots_rate_mean.append(bots_rates.mean())
+    bots_rate_std.append(bots_rates.std())
 
-    ras = np.array(ras)
-    score_cv.append(ras.mean())
-    std_cv.append(ras.std())
+    roc_aucs = np.array(roc_aucs)
+    roc_auc_mean.append(roc_aucs.mean())
+    roc_auc_std.append(roc_aucs.std())
 
-    print "k: ", k
-    print "bots proba for test set: ", brs.mean()
+    # print "k: ", k
+    # print "bots proba for test set: ", brs.mean()
 
 np.set_printoptions(suppress=True, precision=3)
 print "CV result:"
-print np.round(np.array([ks, score_cv, std_cv, br_mean, br_std,
-                         spec_mean, spec_std]), 3)
+cv_result = np.round(np.array([ks[0], roc_auc_mean[0], roc_auc_std[0],
+                               bots_rate_mean[0], bots_rate_std[0],
+                               specificity_mean[0],
+                               specificity_std[0], score_mean[0],
+                               score_std[0]]), 3)
+cv_scores = ['multiplicity', 'roc_auc: mean', 'roc_auc: std',
+             'bots_rate: mean', 'bote_rate: std', 'specificity: mean',
+             'specificity: std', 'accuracy: mean', 'accuracy: std']
 
+print pd.DataFrame(cv_result, index=cv_scores)
 
 # 70 bidders in test.csv do not have any data in bids.csv. Thus they
 # are not included in analysis/prediction, but they need to be

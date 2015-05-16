@@ -93,3 +93,137 @@ holdout=0.2
 holdout=0.0 --> multiplicity=8?
 
 
+
+1. max_auc_count = 1500
+bots proba for test set:  0.09493412527
+[[ 1.   ]
+ [ 0.91 ]
+ [ 0.045]
+ [ 0.095]
+ [ 0.066]
+ [ 0.888]
+ [ 0.058]]
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.051403887689
+
+[[ 1.   ]
+ [ 0.915]
+ [ 0.042]
+ [ 0.097]
+ [ 0.059]
+ [ 0.899]
+ [ 0.053]
+ [ 0.845]
+ [ 0.054]]
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.0520518358531
+
+[[ 10.   ]
+ [  0.915]
+ [  0.014]
+ [  0.003]
+ [  0.003]
+ [  0.37 ]
+ [  0.078]
+ [  0.922]
+ [  0.011]]
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.000215982721382
+multiplicity       1.000
+roc_auc: mean      0.911
+roc_auc: std       0.049
+bots_rate: mean    0.072
+bote_rate: std     0.057
+specificity: mean  0.889
+specificity: std   0.077
+accuracy: mean     0.839
+accuracy: std      0.057
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.0207343412527
+
+
+2. max_auc_count = 150
+CV result:
+[[ 1.   ]
+ [ 0.913]
+ [ 0.04 ]
+ [ 0.078]
+ [ 0.045]
+ [ 0.906]
+ [ 0.049]]
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.0427645788337
+
+                       0
+multiplicity       1.000
+roc_auc: mean      0.914
+roc_auc: std       0.045
+bots_rate: mean    0.075
+bote_rate: std     0.051
+specificity: mean  0.897
+specificity: std   0.076
+accuracy: mean     0.847
+accuracy: std      0.055
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.0313174946004
+
+
+3. max_auc_count = 0
+CV result:
+[[ 1.   ]
+ [ 0.907]
+ [ 0.044]
+ [ 0.255]
+ [ 0.028]
+ [ 0.899]
+ [ 0.048]]
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.260691144708
+
+4. max_auc_count = 0
+dropped all the num_* columns except num_bids
+
+CV result:
+[[ 1.   ]
+ [ 0.875]
+ [ 0.049]
+ [ 0.242]
+ [ 0.026]
+ [ 0.827]
+ [ 0.065]
+ [ 0.812]
+ [ 0.054]]
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.241252699784
+
+5. max_auc_count = 0
+dropped all the num_* columns except num_bids
+dropped all the merchandise_* labels
+
+CV result:
+[[ 1.   ]
+ [ 0.897]
+ [ 0.047]
+ [ 0.23 ]
+ [ 0.023]
+ [ 0.889]
+ [ 0.05 ]
+ [ 0.844]
+ [ 0.051]]
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.244060475162
+
+6 - just use num_bids
+
+CV result:
+[[ 1.   ]
+ [ 0.857]
+ [ 0.066]
+ [ 0.231]
+ [ 0.017]
+ [ 0.815]
+ [ 0.084]
+ [ 0.805]
+ [ 0.063]]
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.27494600432
