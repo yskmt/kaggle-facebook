@@ -107,7 +107,7 @@ def gather_info(num_bidders, max_auc, max_auc_count, bids, class_id):
 
 
 def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
-                    holdout=0.0, multiplicity=5):
+                    holdout=0.0, multiplicity=5, plot_roc=False):
     '''
     multiplicity: ratio of human to bots in training set
     '''
@@ -174,17 +174,18 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         roc_auc = auc(fpr, tpr)
         print "Area under the ROC curve : %f" % roc_auc
 
-        # Plot ROC curve
-        plt.clf()
-        plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
-        plt.plot([0, 1], [0, 1], 'k--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.0])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('Receiver operating characteristic example')
-        plt.legend(loc="lower right")
-        plt.show()
+        if plot_roc:
+            # Plot ROC curve
+            plt.clf()
+            plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
+            plt.plot([0, 1], [0, 1], 'k--')
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.0])
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title('Receiver operating characteristic example')
+            plt.legend(loc="lower right")
+            plt.show()
     else:
         auc_valid = 0.0
         y_valid = 0.0
