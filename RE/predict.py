@@ -54,14 +54,15 @@ cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
 cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
 cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
-info_humans = append_countries(info_humans, cinfo_humans, keys_sig+keys_na)
-info_bots = append_countries(info_bots, cinfo_bots, keys_sig+keys_na)
-info_test = append_countries(info_test, cinfo_test, keys_sig+keys_na)
+cts_appended = keys_sig+keys_na
+
+info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
+info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
+info_test = append_countries(info_test, cinfo_test, cts_appended)
 
 info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
-
 
 # bids-by-auction data
 # load bids-by-auction data from file
@@ -73,6 +74,7 @@ bbainfo_test = pd.read_csv('data/bba_info_test.csv', index_col=0)
 min_bba = np.min([bbainfo_humans.shape[1],
                   bbainfo_bots.shape[1],
                   bbainfo_test.shape[1]])
+min_bba = 100
 
 info_humans = append_bba(info_humans, bbainfo_humans, min_bba)
 info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
@@ -92,6 +94,14 @@ if 'merchandise' in keys_all:
 else:
     keys_use = keys_all
 
+
+keys_use = [u'au', u'id', u'num_bids', u'bba_1', u'bba_4', u'th',
+            u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls',
+            u'bba_6', u'bba_9', u'ar', u'bba_8', u'bba_7', u'bba_10',
+            u'bba_11', u'num_ips', u'bba_12', u'num_aucs',
+            u'num_countries']
+keys_use = keys_use[:10]
+    
 # keys_use = ['num_bids', 'num_aucs', 'num_countries', 'num_ips', 'num_urls']
 
 # , u'num_aucs',u'num_devices',
@@ -111,44 +121,49 @@ for key in keys_all:
 # k-fold Cross Validaton
 ############################################################################
 
-# roc_auc = 0.0
-# clf_score = 0.0
+roc_auc = []
+roc_auc_std = []
+clf_score = []
 
-# num_cv = 3
-# for i in range(num_cv):
-#     clf, ra, cs, tpr_50 \
-#         = predict_cv(info_humans, info_bots, n_folds=3,
-#                      n_estimators=500, plot_roc=True)
-
+num_cv = 10
+for i in range(num_cv):
+    clf, ra, cs, tpr_50 \
+        = predict_cv(info_humans, info_bots, n_folds=5,
+                     n_estimators=500, plot_roc=False)
     
-#     print ra.mean(), ra.std()
-#     print cs.mean(), cs.std()
-#     # print tpr_50.mean(), tpr_50.std()
+    print ra.mean(), ra.std()
+    print cs.mean(), cs.std()
+    # print tpr_50.mean(), tpr_50.std()
     
-#     roc_auc += ra.mean()
-#     clf_score += cs.mean()
+    roc_auc.append(ra.mean())
+    roc_auc_std.append(ra.std())
+    clf_score.append(cs.mean())
 
-# print roc_auc/num_cv
-# print clf_score/num_cv
-# # print tpr_50
+roc_auc = np.array(roc_auc)
+roc_auc_std = np.array(roc_auc_std)
+clf_score = np.array(clf_score)
+
+print ""
+print roc_auc.mean(), roc_auc_std.mean()
+print clf_score.mean(), clf_score.std()
+# print tpr_50
 
 
 ############################################################################
 # fit and predict
 ############################################################################
 
-# y_test_proba, y_train_proba, _ \
-#     = fit_and_predict(info_humans, info_bots, info_test,
-#                       n_estimators=1000, p_use=None, cv='RF')
+y_test_proba, y_train_proba, _\
+    = fit_and_predict(info_humans, info_bots, info_test,
+                      n_estimators=1000, p_use=None, cv='ET')
 
 ############################################################################
 # xgboost: CV
 ############################################################################
-# p_use = len(info_bots)/float(len(info_humans))
 
 # y_pred, ytrain_pred, cv_result \
 #     = fit_and_predict(info_humans, info_bots, info_test,
-#                       n_estimators=400, p_use=p_use, cv=5)
+#                       n_estimators=20, p_use=None, cv=5)
 
 # auc = []
 # for i in range(len(cv_result)):
@@ -160,22 +175,25 @@ for key in keys_all:
 # print "itr:", best_itr, "auc:", auc_best, "+=", auc_std
 
 
+# ############################################################################
+# # xgboost: prediction
+# ############################################################################
+# ytestp = []
+# ytrainp = []
+
+# for i in range(40):
+#     y_test_proba, y_train_pred, y_train, cv_result \
+#         = fit_and_predict(info_humans, info_bots, info_test,
+#                           n_estimators=400, p_use=p_use)
+
+#     ytestp.append(y_test_proba)
+#     ytrainp.append(y_train_pred)
+
+
 ############################################################################
-# xgboost: prediction
+# submission file generation
 ############################################################################
-ytestp = []
-ytrainp = []
 
-for i in range(40):
-    y_test_proba, y_train_pred, y_train, cv_result \
-        = fit_and_predict(info_humans, info_bots, info_test,
-                          n_estimators=400, p_use=p_use)
-
-    ytestp.append(y_test_proba)
-    ytrainp.append(y_train_pred)
-
-
-y_test_proba = np.array(ytestp).mean(axis=0)
 # 70 bidders in test.csv do not have any data in bids.csv. Thus they
 # are not included in analysis/prediction, but they need to be
 # appended in the submission. The prediction of these bidders do not matter.
@@ -186,7 +204,8 @@ test_bidders = pd.read_csv('data/test.csv', index_col=0)
 
 submission = pd.concat([submission, test_bidders], axis=1)
 submission.fillna(0, inplace=True)
-submission.to_csv('sub.csv', columns=['prediction'], index_label='bidder_id')
+submission.to_csv('data/submission.csv', columns=['prediction'],
+                  index_label='bidder_id')
 
 
 # #  second method

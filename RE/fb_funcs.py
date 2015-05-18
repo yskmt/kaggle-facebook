@@ -6,6 +6,7 @@ from pdb import set_trace
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import ExtraTreesClassifier
 
 from sklearn.metrics import roc_curve, auc
 from sklearn import cross_validation
@@ -132,8 +133,10 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        clf = RandomForestClassifier(n_estimators=n_estimators,
-                                     class_weight=None, max_features=None)
+        # clf = RandomForestClassifier(n_estimators=n_estimators,
+                                     # class_weight=None, max_features=None)
+        clf = ExtraTreesClassifier(n_estimators=n_estimators)
+        
         # clf = SGDClassifier(loss='log')
         # clf = DecisionTreeClassifier()
 
@@ -207,6 +210,8 @@ def fit_and_predict(info_humans, info_bots, info_test,
     X_train = info_given.sort(axis=1).as_matrix()
     y_train = labels_train
     X_test = info_test.sort(axis=1).as_matrix()
+
+    features = info_given.sort(axis=1).keys()
     
     # xgboost!
     dtrain = xgb.DMatrix(X_train, label=y_train)
@@ -226,6 +231,38 @@ def fit_and_predict(info_humans, info_bots, info_test,
         y_train_pred = clf.predict_proba(X_train)
         return y_pred[:,1], y_train_pred[:,1], 0
 
+    elif cv == 'ET':
+        clf = ExtraTreesClassifier(n_estimators=n_estimators,
+                                   random_state=0)
+        clf.fit(X_train, y_train)
+        importances = clf.feature_importances_
+
+        std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+                     axis=0)
+        indices = np.argsort(importances)[::-1]
+
+        # Print the feature ranking
+        print("Feature ranking:")
+
+        for f in range(len(features)):
+            print("%d. feature %d: %s = (%f)"
+                  % (f, indices[f], features[indices[f]], importances[indices[f]]))
+
+        print (features[indices])[:22]
+            
+        # Plot the feature importances of the forest
+        plt.figure()
+        plt.title("Feature importances")
+        plt.bar(range(len(features)), importances[indices],
+                color="r", yerr=std[indices], align="center")
+        plt.xticks(range(len(features)), features[indices])
+        plt.xlim([-1, len(features)])
+        plt.show()
+
+        y_pred = clf.predict_proba(X_test)
+        y_train_pred = clf.predict_proba(X_train)
+
+        return y_pred[:,1], y_train_pred[:,1], 0
     else:
         evallist = [(dtrain, 'train')]
         bst = xgb.train(params, dtrain, num_rounds, evallist)
