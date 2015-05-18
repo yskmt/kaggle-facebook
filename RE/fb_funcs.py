@@ -323,6 +323,40 @@ def gather_info(bids_data):
     return bidders_info
 
 
+def gather_auc_bids_info(bids_data):
+    """
+    Gather the number of bids for each auction info.
+    The number of bids are sorted in descending order.
+    """
+
+    # ANALYSIS
+    bidder_ids = bids_data['bidder_id'].unique()
+    num_bidders = len(bidder_ids)
+    
+    # for each bidder
+    bidders_aucbids_info = []
+    for i in range(num_bidders):
+        if i % 10 == 0:
+            print "%d/%d" % (i, num_bidders)
+        # bids by this bidder
+        bids = bids_data[bids_data['bidder_id'] == bidder_ids[i]]
+
+        # count number of bids for each auction by this bidder
+        num_bids_auction = []
+        for auction in bids['auction'].unique():
+            num_bids_auction.append(len(bids[bids['auction'] == auction]))
+
+        bidders_aucbids_info.append(sorted(num_bids_auction, reverse=True))
+
+    bbainfo_bots = pd.DataFrame(bidders_aucbids_info, index=bidder_ids)
+    bbainfo_bots.fillna(0, inplace=True)
+
+    # change column label to reflect the number of bids
+    bbainfo_bots.columns = map(str, range(1, bbainfo_bots.shape[1]+1))
+    
+    return bbainfo_bots
+
+
 def gather_country_info(bids_data):
     """
     Gather the country infromation from bids data.
@@ -339,7 +373,7 @@ def gather_country_info(bids_data):
         # get bids by this bidder
         bids = bids_data[bids_data['bidder_id'] == bidder_ids[i]]
 
-        # number of occurences of each countrie by this bidder
+        # number of occurences of each country by this bidder
         bidders_country_info.append(bids['country'].value_counts())
 
         pd.concat([pd.DataFrame(bidders_country_info[0]).transpose(),
