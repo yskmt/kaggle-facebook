@@ -11,6 +11,7 @@ from sklearn.metrics import roc_auc_score
 
 # bids_test = pd.read_csv('data/bids_test.csv')
 
+
 def get_max_auc(bids):
 
     bidder_id = bids['bidder_id'].unique()
@@ -112,12 +113,19 @@ def get_specificity(y_true, y_pred):
     Determine the specificity (true positive rate)
     := true_positive/positive
     """
-    
+
     positive = sum(y_true)
-    true_positive = sum(np.logical_and(y_pred==1, y_true==1))
+    true_positive = sum(np.logical_and(y_pred == 1, y_true == 1))
 
-    return true_positive/float(positive)
+    return true_positive / float(positive)
 
+
+def get_fallout(y_true, y_pred):
+
+    negative = len(y_true) - sum(y_true)
+    false_positive = sum(np.logical_and(y_pred == 1, y_true == 0))
+
+    return false_positive / float(negative)
 
 
 def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
@@ -128,13 +136,12 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     np.random.seed(int(time.time() * 1000 % 4294967295))
 
     # multiplicity *= (1+(np.random.random()-0.5)/5.0)
-    # holdout *= (1+(np.random.random()-0.5)/5.0) 
-    
+    # holdout *= (1+(np.random.random()-0.5)/5.0)
+
     # under-sample the human data
     num_human_ext = int(min(num_bots * multiplicity, num_human))
     index_shuffle = range(num_human)
     np.random.shuffle(index_shuffle)
-
     if holdout > 0.0:
         num_human_train = int(num_human_ext * (1 - holdout))
         num_human_valid = num_human_ext - num_human_train
@@ -174,8 +181,9 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
     # print "fitting the model"
     clf = RandomForestClassifier(n_estimators=100, n_jobs=2,
                                  random_state=1234, verbose=0,
-                                 max_features='auto')
-    # clf = GradientBoostingClassifier()
+                                 max_features='auto', class_weight=None)
+    # clf = GradientBoostingClassifier(loss='exponential',
+                                     # learning_rate=0.1, n_estimators=100)
     # clf = SGDClassifier(loss="log", verbose=1, random_state=1234, n_iter=5000)
     # clf = LogisticRegression()
     clf.fit(X_train, y)
@@ -194,15 +202,17 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         y_valid_proba = clf.predict_proba(X_valid)
         y_valid_pred = clf.predict(X_valid)
         specificity = get_specificity(y_valid, y_valid_pred)
-        
+        print "FPR: ", get_fallout(y_valid, y_valid_pred)
         print "TPR: ", specificity
-        
+
         fpr, tpr, thresholds = roc_curve(y_valid, y_valid_proba[:, 1])
         roc_auc = auc(fpr, tpr)
         # print "Area under the ROC curve : %f" % roc_auc
+        # import pdb
+        # pdb.set_trace()
 
         score_valid = clf.score(X_valid, y_valid)
-        
+
         if plot_roc:
             # Plot ROC curve
             plt.clf()
@@ -221,7 +231,7 @@ def predict_usample(num_human, num_bots, human_info, bots_info, test_info,
         roc_auc = 0.0
         specificity = 0.0
         score_valid = 0.0
-        
+
     # prediction on test set
     y_proba = clf.predict_proba(X_test)
     y_pred = clf.predict(X_test)

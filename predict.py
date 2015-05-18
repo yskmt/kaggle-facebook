@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 from etc import predict_usample
 
+start_time = time.time()
 print "Loading postprocessed data files..."
 
 humanfile = 'data/human_info.csv'
@@ -34,8 +35,8 @@ bbba = pd.read_csv('data/bots_bids_by_aucs.csv', index_col=0)
 hbba = pd.read_csv('data/human_bids_by_aucs.csv', index_col=0)
 tbba = pd.read_csv('data/test_bids_by_aucs.csv', index_col=0)
 
-# take the minimum number of auction bidded
-max_auc_count = 1500
+# take only some data from auc_count
+max_auc_count = 1000
 max_auc_count = min([bbba.shape[1], hbba.shape[1], tbba.shape[1],
                      max_auc_count])
 
@@ -61,18 +62,18 @@ if max_auc_count > 0:
 
 # drop num item labels
 # columns_dropped = [u'num_merchandise', u'num_devices', u'num_countries', u'num_ips',
-#                    u'num_urls'] + ['num_aucs']
-# # columns_dropped = [u'num_merchandise']
-# human_info.drop(columns_dropped, axis=1, inplace=True)
-# bots_info.drop(columns_dropped, axis=1, inplace=True)
-# test_info.drop(columns_dropped, axis=1, inplace=True)
+                   # u'num_urls']
+columns_dropped = [u'num_merchandise']
+human_info.drop(columns_dropped, axis=1, inplace=True)
+bots_info.drop(columns_dropped, axis=1, inplace=True)
+test_info.drop(columns_dropped, axis=1, inplace=True)
 
-# # drop merchandise dummy variables
-# for key in human_info.keys():
-#     if 'merchandise' in key:
-#         human_info.drop([key], axis=1, inplace=True)
-#         bots_info.drop([key], axis=1, inplace=True)
-#         test_info.drop([key], axis=1, inplace=True)
+# drop merchandise dummy variables
+for key in human_info.keys():
+    if 'merchandise' in key:
+        human_info.drop([key], axis=1, inplace=True)
+        bots_info.drop([key], axis=1, inplace=True)
+        test_info.drop([key], axis=1, inplace=True)
 
 human_info.sort(axis=1)
 bots_info.sort(axis=1)
@@ -93,11 +94,11 @@ specificity_mean = []
 specificity_std = []
 score_mean = []
 score_std = []
-holdout = 0.0
+holdout = 0.2
 # ks = range(1,18,4)
-ks = range(1, 2)
+ks = range(20, 21)
 for k in ks:
-    num_sim = 200
+    num_sim = 5
     y_probas = []
     roc_aucs = []
     tprs = []
@@ -108,7 +109,7 @@ for k in ks:
         y_proba, y_pred, train_proba, train_pred, roc_auc, tpr, scov\
             = predict_usample(num_human, num_bots, human_info,
                               bots_info, test_info, holdout=holdout,
-                              multiplicity=k)
+                              multiplicity=k, plot_roc=True)
 
         y_probas.append(y_proba[:, 1])  # gather the bot probabilities
         roc_aucs.append(roc_auc)
@@ -169,3 +170,7 @@ submission.to_csv('data/submission.csv', index_label='bidder_id')
 
 print "bots proba for train set:", num_bots / float(num_human + num_bots)
 print "bots proba for test set: ", sum(y_proba_ave > 0.5) / float(len(y_proba_ave))
+
+end_time = time.time()
+
+print "Time elapsed: %.2f" %(end_time-start_time)

@@ -93,6 +93,52 @@ holdout=0.2
 holdout=0.0 --> multiplicity=8?
 
 
+0. max_auc_count = 1500
+- num_merchandise
+
+* num_sim = 200
+                       0
+multiplicity       1.000
+roc_auc: mean      0.921
+roc_auc: std       0.051
+bots_rate: mean    0.088
+bote_rate: std     0.062
+specificity: mean  0.935
+specificity: std   0.054
+accuracy: mean     0.858
+accuracy: std      0.059
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.0414686825054
+
+* num_sim = 400
+                       0
+multiplicity       1.000
+roc_auc: mean      0.925
+roc_auc: std       0.047
+bots_rate: mean    0.094
+bote_rate: std     0.062
+specificity: mean  0.944
+specificity: std   0.050
+accuracy: mean     0.863
+accuracy: std      0.055
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.0464362850972
+
+* num_sim = 800
+multiplicity       1.000
+roc_auc: mean      0.926
+roc_auc: std       0.049
+bots_rate: mean    0.091
+bote_rate: std     0.058
+specificity: mean  0.943
+specificity: std   0.052
+accuracy: mean     0.863
+accuracy: std      0.058
+bots proba for train set: 0.0519153225806
+bots proba for test set:  0.0464362850972
+Time elapsed: 931.21
+
+
 
 1. max_auc_count = 1500
 bots proba for test set:  0.09493412527
