@@ -7,6 +7,7 @@ author: Yusuke Sakamoto
 
 """
 
+from pdb import set_trace
 import numpy as np
 import pandas as pd
 import time
@@ -17,7 +18,8 @@ from sklearn.metrics import roc_curve, auc
 
 from fb_funcs import (predict_usample, append_merchandise, predict_cv,
                       fit_and_predict,
-                      append_countries, keys_sig, keys_na)
+                      append_countries, keys_sig, keys_na,
+                      append_bba)
 
 
 start_time = time.time()
@@ -42,23 +44,39 @@ num_test = info_test.shape[0]
 
 # if using the merchandise data, dummies needs to be created
 
-# info_humans = append_merchandise(info_humans, drop=True)
-# info_bots = append_merchandise(info_bots, drop=True)
-# info_test = append_merchandise(info_test, drop=True)
+info_humans = append_merchandise(info_humans, drop=True)
+info_bots = append_merchandise(info_bots, drop=True)
+info_test = append_merchandise(info_test, drop=True)
 
 # add country counts that can be significant
 # load countrty info from file
-# cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
-# cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
-# cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
+cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
+cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
+cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
-# info_humans = append_countries(info_humans, cinfo_humans, keys_sig+keys_na)
-# info_bots = append_countries(info_bots, cinfo_bots, keys_sig+keys_na)
-# info_test = append_countries(info_test, cinfo_test, keys_sig+keys_na)
+info_humans = append_countries(info_humans, cinfo_humans, keys_sig+keys_na)
+info_bots = append_countries(info_bots, cinfo_bots, keys_sig+keys_na)
+info_test = append_countries(info_test, cinfo_test, keys_sig+keys_na)
 
-# info_humans.fillna(0, inplace=True)
-# info_bots.fillna(0, inplace=True)
-# info_test.fillna(0, inplace=True)
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
+
+
+# bids-by-auction data
+# load bids-by-auction data from file
+bbainfo_humans = pd.read_csv('data/bba_info_humans.csv', index_col=0)
+bbainfo_bots = pd.read_csv('data/bba_info_bots.csv', index_col=0)
+bbainfo_test = pd.read_csv('data/bba_info_test.csv', index_col=0)
+
+# take the minimum of the number of auctions
+min_bba = np.min([bbainfo_humans.shape[1],
+                  bbainfo_bots.shape[1],
+                  bbainfo_test.shape[1]])
+
+info_humans = append_bba(info_humans, bbainfo_humans, min_bba)
+info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
+info_test = append_bba(info_test, bbainfo_test, min_bba)
 
 ############################################################################
 # Data dropping
@@ -69,9 +87,9 @@ keys_all = info_humans.keys()
 # u'num_countries', u'num_ips', u'num_urls', u'merchandise'],
 
 # decide which keys to use
-keys_use = \
-    keys_all.drop(['merchandise'])
-# keys_use = keys_all
+# keys_use = \
+    # keys_all.drop(['merchandise'])
+keys_use = keys_all
 
 # drop keys
 print "dropping some keys..."

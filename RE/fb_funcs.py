@@ -241,6 +241,13 @@ def append_merchandise(info, drop=True):
 
     return info
 
+def append_bba(info, bbainfo, num_bba):
+    """
+    Append bids-by-auction data
+    """
+
+    return pd.concat([info, bbainfo.iloc[:, :num_bba]], axis=1)
+    
 
 def append_countries(info, cinfo, countries):
     """
@@ -351,8 +358,9 @@ def gather_auc_bids_info(bids_data):
     bbainfo_bots = pd.DataFrame(bidders_aucbids_info, index=bidder_ids)
     bbainfo_bots.fillna(0, inplace=True)
 
-    # change column label to reflect the number of bids
-    bbainfo_bots.columns = map(str, range(1, bbainfo_bots.shape[1]+1))
+    # change column label to reflect the number of bids and add prefix
+    bbainfo_bots.columns = map(lambda x: 'bba_'+str(x),
+                               range(1, bbainfo_bots.shape[1]+1))
     
     return bbainfo_bots
 
