@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import pdb
+from pdb import set_trace
 
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import SGDClassifier
@@ -118,8 +118,8 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
     y = labels_train
 
     # split for cv
-    kf = cross_validation.KFold(n=num_given, n_folds=n_folds, shuffle=True,
-                                random_state=None)
+    kf = cross_validation.StratifiedKFold(
+        y, n_folds=n_folds, shuffle=True, random_state=None)
 
     # cv scores
     roc_auc = np.zeros(n_folds)
@@ -146,17 +146,11 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
         if plot_roc:
             # Plot ROC curve
-            plt.clf()
-            plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' %
-                     roc_auc[n_cv])
-            plt.plot([0, 1], [0, 1], 'k--')
-            plt.xlim([0.0, 1.0])
-            plt.ylim([0.0, 1.0])
-            plt.xlabel('False Positive Rate')
-            plt.ylabel('True Positive Rate')
-            plt.title('Receiver operating characteristic example')
-            plt.legend(loc="lower right")
-            plt.show()
+            # plt.clf()
+            plt.plot(fpr, tpr, label='ROC curve # %d (area = %0.2f)' %
+                     (n_cv, roc_auc[n_cv]))
+    
+            # plt.show()
 
         clf_score[n_cv] = clf.score(X_test, y_test)
 
@@ -166,6 +160,16 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
         n_cv += 1
 
+    if plot_roc:
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.0])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic example')
+        plt.legend(loc="lower right")
+        plt.show()
+        
     return clf, roc_auc, clf_score, tpr_50
 
 
@@ -175,6 +179,19 @@ def fit_and_predict(info_humans, info_bots, info_test,
     num_humans = len(info_humans)
     num_bots = len(info_bots)
     num_test = len(info_test)
+
+    if p_use is not None:
+        num_bots_use = int(num_bots)
+        num_humans_use = int(num_humans*p_use)
+
+        indx_bots = np.random.choice(num_bots, num_bots_use, replace=False)
+        indx_humans = np.random.choice(num_humans, num_humans_use, replace=False)
+
+        info_humans = info_humans.iloc[indx_humans]
+        info_bots = info_bots.iloc[indx_bots]
+
+        num_bots = num_bots_use
+        num_humans = num_humans_use
 
     # combine humans and bots data to create given data
     info_given = pd.concat([info_humans, info_bots], axis=0)
@@ -190,35 +207,34 @@ def fit_and_predict(info_humans, info_bots, info_test,
     X_train = info_given.sort(axis=1).as_matrix()
     y_train = labels_train
     X_test = info_test.sort(axis=1).as_matrix()
-
-    # only use part of traning set
-    if p_use is not None:
-        X_train = X_train[:num_given * p_use, :]
-        y_train = y_train[:num_given * p_use]
-
+    
     # xgboost!
     dtrain = xgb.DMatrix(X_train, label=y_train)
-    params = {"objective": "binary:logistic"}
+    params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10}
     num_rounds = n_estimators
     
-    if cv is not None:
+    if type(cv) == int:
         cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
                            metrics={'rmse', 'error', 'auc'}, seed=0)
         return 0, 0, cv_result
+    elif cv == 'RF':
+        # randomforest!
+        clf = RandomForestClassifier(n_estimators=n_estimators,
+                                     class_weight='auto', verbose=1)
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict_proba(X_test)
+        y_train_pred = clf.predict_proba(X_train)
+        return y_pred[:,1], y_train_pred[:,1], 0
+
     else:
         evallist = [(dtrain, 'train')]
         bst = xgb.train(params, dtrain, num_rounds, evallist)
         dtest = xgb.DMatrix(X_test)
-        ypred = bst.predict(dtest)
-        ytrain_pred = bst.predict(dtrain)
+        y_pred = bst.predict(dtest)
+        y_train_pred = bst.predict(dtrain)
+        
+        return y_pred, y_train_pred, y_train, 0
 
-        return ypred, ytrain_pred, 0
-    # # randomforest!
-    # clf = RandomForestClassifier(n_estimators=n_estimators, class_weight='auto')
-    # clf.fit(X_train, y_train)
-    # y_test_proba = clf.predict_proba(X_test)
-
-    # return clf, y_test_proba
 
 
 def append_merchandise(info, drop=True):

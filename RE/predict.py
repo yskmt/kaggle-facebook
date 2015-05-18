@@ -87,10 +87,16 @@ keys_all = info_humans.keys()
 # u'num_countries', u'num_ips', u'num_urls', u'merchandise'],
 
 # decide which keys to use
-# keys_use = \
-    # keys_all.drop(['merchandise'])
-keys_use = keys_all
+if 'merchandise' in keys_all:
+    keys_use = keys_all.drop(['merchandise'])
+else:
+    keys_use = keys_all
 
+# keys_use = ['num_bids', 'num_aucs', 'num_countries', 'num_ips', 'num_urls']
+
+# , u'num_aucs',u'num_devices',
+            # u'num_countries', u'num_ips', u'num_urls']
+    
 # drop keys
 print "dropping some keys..."
 print "The keys to use: ", list(keys_use)
@@ -131,54 +137,74 @@ for key in keys_all:
 # fit and predict
 ############################################################################
 
-# clf, y_test_proba = fit_and_predict(info_humans, info_bots, info_test,
-#                                     n_estimators=10000, p_use=None)
-
-
+# y_test_proba, y_train_proba, _ \
+#     = fit_and_predict(info_humans, info_bots, info_test,
+#                       n_estimators=1000, p_use=None, cv='RF')
 
 ############################################################################
 # xgboost: CV
 ############################################################################
-y_pred, yrain_pred, cv_result \
-    = fit_and_predict(info_humans, info_bots, info_test,
-                      n_estimators=100, p_use=None, cv=5)
+# p_use = len(info_bots)/float(len(info_humans))
 
-auc = []
-for i in range(len(cv_result)):
-    auc.append(float(cv_result[i].split('\t')[1].split(':')[1].split('+')[0]))
+# y_pred, ytrain_pred, cv_result \
+#     = fit_and_predict(info_humans, info_bots, info_test,
+#                       n_estimators=400, p_use=p_use, cv=5)
 
-best_itr = np.argmax(auc)
-auc_std = float(cv_result[11].split('\t')[1].split('+')[1])
-auc_best = np.max(auc)
-print "itr:", best_itr, "auc:", auc_best, "+=", auc_std
+# auc = []
+# for i in range(len(cv_result)):
+#     auc.append(float(cv_result[i].split('\t')[1].split(':')[1].split('+')[0]))
+
+# best_itr = np.argmax(auc)
+# auc_std = float(cv_result[11].split('\t')[1].split('+')[1])
+# auc_best = np.max(auc)
+# print "itr:", best_itr, "auc:", auc_best, "+=", auc_std
 
 
 ############################################################################
 # xgboost: prediction
 ############################################################################
-y_test_proba, yrain_pred, cv_result \
-    = fit_and_predict(info_humans, info_bots, info_test,
-                      n_estimators=best_itr, p_use=None)
+ytestp = []
+ytrainp = []
 
+for i in range(40):
+    y_test_proba, y_train_pred, y_train, cv_result \
+        = fit_and_predict(info_humans, info_bots, info_test,
+                          n_estimators=400, p_use=p_use)
+
+    ytestp.append(y_test_proba)
+    ytrainp.append(y_train_pred)
+
+
+y_test_proba = np.array(ytestp).mean(axis=0)
 # 70 bidders in test.csv do not have any data in bids.csv. Thus they
 # are not included in analysis/prediction, but they need to be
 # appended in the submission. The prediction of these bidders do not matter.
 
-test_ids = info_test.index
-test_ids_all = pd.read_csv('data/test.csv')['bidder_id']
-test_ids_append = list(
-    set(test_ids_all.values).difference(set(test_ids.values)))
-submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
-                                 index=test_ids_append, columns=['prediction'])
+# first method
+submission = pd.DataFrame(y_test_proba, index=info_test.index, columns=['prediction'])
+test_bidders = pd.read_csv('data/test.csv', index_col=0)
 
-# Make as submission file!
-submission = pd.DataFrame(y_test_proba, index=test_ids,
-                          columns=['prediction'])
-submission = pd.concat([submission, submission_append], axis=0)
-submission.to_csv('data/submission.csv', index_label='bidder_id')
+submission = pd.concat([submission, test_bidders], axis=1)
+submission.fillna(0, inplace=True)
+submission.to_csv('sub.csv', columns=['prediction'], index_label='bidder_id')
 
-end_time = time.time()
-print "Time elapsed: %.2f" % (end_time - start_time)
+
+# #  second method
+# test_ids = info_test.index
+# test_ids_all = pd.read_csv('data/test.csv')['bidder_id']
+# test_ids_append = list(
+#     set(test_ids_all.values).difference(set(test_ids.values)))
+# submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
+#                                  index=test_ids_append, columns=['prediction'])
+
+# # Make as submission file!
+# submission = pd.DataFrame(y_test_proba, index=test_ids,
+#                           columns=['prediction'])
+# submission = pd.concat([submission, submission_append], axis=0)
+# submission.to_csv('data/submission.csv', index_label='bidder_id')
+
+# end_time = time.time()
+# print "Time elapsed: %.2f" % (end_time - start_time)
 
 
 ############################################################################
