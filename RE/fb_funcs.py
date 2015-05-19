@@ -133,9 +133,10 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        clf = RandomForestClassifier(n_estimators=n_estimators)
-        # clf = ExtraTreesClassifier(n_estimators=n_estimators)
-
+        # clf = RandomForestClassifier(n_estimators=n_estimators,
+                                     # class_weight=None, max_features=None)
+        clf = ExtraTreesClassifier(n_estimators=n_estimators)
+        
         # clf = SGDClassifier(loss='log')
         # clf = DecisionTreeClassifier()
 
@@ -151,7 +152,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
             # plt.clf()
             plt.plot(fpr, tpr, label='ROC curve # %d (area = %0.2f)' %
                      (n_cv, roc_auc[n_cv]))
-
+    
             # plt.show()
 
         clf_score[n_cv] = clf.score(X_test, y_test)
@@ -171,31 +172,30 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
         plt.title('Receiver operating characteristic example')
         plt.legend(loc="lower right")
         plt.show()
-
+        
     return clf, roc_auc, clf_score, tpr_50
 
 
 def fit_and_predict(info_humans, info_bots, info_test,
-                    n_estimators=1000, p_use=None, model="ET", plotting=False):
+                    n_estimators=1000, p_use=None, cv=None):
 
     num_humans = len(info_humans)
     num_bots = len(info_bots)
-    # num_test = len(info_test)
+    num_test = len(info_test)
 
     if p_use is not None:
         num_bots_use = int(num_bots)
-        num_humans_use = int(num_humans * p_use)
+        num_humans_use = int(num_humans*p_use)
 
         indx_bots = np.random.choice(num_bots, num_bots_use, replace=False)
-        indx_humans = np.random.choice(
-            num_humans, num_humans_use, replace=False)
+        indx_humans = np.random.choice(num_humans, num_humans_use, replace=False)
 
         info_humans = info_humans.iloc[indx_humans]
         info_bots = info_bots.iloc[indx_bots]
 
         num_bots = num_bots_use
         num_humans = num_humans_use
-        
+
     # combine humans and bots data to create given data
     info_given = pd.concat([info_humans, info_bots], axis=0)
     labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
@@ -212,20 +212,28 @@ def fit_and_predict(info_humans, info_bots, info_test,
     X_test = info_test.sort(axis=1).as_matrix()
 
     features = info_given.sort(axis=1).keys()
-
-
-    if model == 'RF':
+    
+    # xgboost!
+    dtrain = xgb.DMatrix(X_train, label=y_train)
+    params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10}
+    num_rounds = n_estimators
+    
+    if type(cv) == int:
+        cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
+                           metrics={'rmse', 'error', 'auc'}, seed=0)
+        return 0, 0, cv_result
+    elif cv == 'RF':
         # randomforest!
         clf = RandomForestClassifier(n_estimators=n_estimators,
                                      class_weight='auto', verbose=1)
         clf.fit(X_train, y_train)
         y_pred = clf.predict_proba(X_test)
         y_train_pred = clf.predict_proba(X_train)
-        return y_pred[:, 1], y_train_pred[:, 1], 0
+        return y_pred[:,1], y_train_pred[:,1], 0
 
-    elif model == 'ET':
+    elif cv == 'ET':
         clf = ExtraTreesClassifier(n_estimators=n_estimators,
-                                   random_state=0, class_weight='auto')
+                                   random_state=0)
         clf.fit(X_train, y_train)
         importances = clf.feature_importances_
 
@@ -240,41 +248,31 @@ def fit_and_predict(info_humans, info_bots, info_test,
             print("%d. feature %d: %s = (%f)"
                   % (f, indices[f], features[indices[f]], importances[indices[f]]))
 
-        print list((features[indices])[:22])
-
-        # Plot the feature importances of the forest
-        if plotting:
-            plt.figure()
-            plt.title("Feature importances")
-            plt.bar(range(len(features)), importances[indices],
-                    color="r", yerr=std[indices], align="center")
-            plt.xticks(range(len(features)), features[indices])
-            plt.xlim([-1, len(features)])
-            plt.show()
+        print (features[indices])[:22]
+            
+        # # Plot the feature importances of the forest
+        # plt.figure()
+        # plt.title("Feature importances")
+        # plt.bar(range(len(features)), importances[indices],
+        #         color="r", yerr=std[indices], align="center")
+        # plt.xticks(range(len(features)), features[indices])
+        # plt.xlim([-1, len(features)])
+        # plt.show()
 
         y_pred = clf.predict_proba(X_test)
         y_train_pred = clf.predict_proba(X_train)
 
-        return y_pred[:, 1], y_train_pred[:, 1], 0
-    elif model == "XGB":
-        # xgboost!
-        dtrain = xgb.DMatrix(X_train, label=y_train)
-        params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10}
-        num_rounds = n_estimators
-        
+        return y_pred[:,1], y_train_pred[:,1], 0
+    else:
         evallist = [(dtrain, 'train')]
         bst = xgb.train(params, dtrain, num_rounds, evallist)
         dtest = xgb.DMatrix(X_test)
         y_pred = bst.predict(dtest)
         y_train_pred = bst.predict(dtrain)
-
+        
         return y_pred, y_train_pred, y_train, 0
 
-    elif model == "XGB_CV":
-        cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
-                           metrics={'rmse', 'error', 'auc'}, seed=0)
-        return 0, 0, cv_result
-    
+
 
 def append_merchandise(info, drop=True):
     """
@@ -296,14 +294,13 @@ def append_merchandise(info, drop=True):
 
     return info
 
-
 def append_bba(info, bbainfo, num_bba):
     """
     Append bids-by-auction data
     """
 
     return pd.concat([info, bbainfo.iloc[:, :num_bba]], axis=1)
-
+    
 
 def append_countries(info, cinfo, countries):
     """
@@ -395,7 +392,7 @@ def gather_auc_bids_info(bids_data):
     # ANALYSIS
     bidder_ids = bids_data['bidder_id'].unique()
     num_bidders = len(bidder_ids)
-
+    
     # for each bidder
     bidders_aucbids_info = []
     for i in range(num_bidders):
@@ -415,9 +412,9 @@ def gather_auc_bids_info(bids_data):
     bbainfo_bots.fillna(0, inplace=True)
 
     # change column label to reflect the number of bids and add prefix
-    bbainfo_bots.columns = map(lambda x: 'bba_' + str(x),
-                               range(1, bbainfo_bots.shape[1] + 1))
-
+    bbainfo_bots.columns = map(lambda x: 'bba_'+str(x),
+                               range(1, bbainfo_bots.shape[1]+1))
+    
     return bbainfo_bots
 
 
@@ -452,3 +449,36 @@ def gather_country_info(bids_data):
     bidders_country_info.fillna(0)
 
     return bidders_country_info
+
+
+def gather_device_info(bids_data):
+    """
+    Gather the device infromation from bids data.
+    """
+
+    bidder_ids = bids_data['bidder_id'].unique()
+    num_bidders = len(bidder_ids)
+
+    bidders_device_info = []
+    # for each bidder
+    for i in range(num_bidders):
+        if i % 10 == 0:
+            print "%d/%d" % (i, num_bidders)
+        # get bids by this bidder
+        bids = bids_data[bids_data['bidder_id'] == bidder_ids[i]]
+
+        # number of occurences of each device by this bidder
+        bidders_device_info.append(bids['device'].value_counts())
+
+        pd.concat([pd.DataFrame(bidders_device_info[0]).transpose(),
+                   pd.DataFrame([bidder_ids[0]])], axis=1)
+
+    bd_info = pd.concat(bidders_device_info, axis=1).transpose()
+    bidders_device_info \
+        = pd.concat([bd_info,
+                     pd.DataFrame(bidder_ids, columns=['bidder_id'])], axis=1)\
+        .set_index('bidder_id')
+
+    bidders_device_info.fillna(0)
+
+    return bidders_device_info

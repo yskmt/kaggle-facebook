@@ -10,7 +10,7 @@ author: Yusuke Sakamoto
 import numpy as np
 import pandas as pd
 
-from fb_funcs import gather_info, gather_country_info, gather_auc_bids_info
+from fb_funcs import gather_info, gather_country_info, gather_auc_bids_info, gather_device_info
 
 # set(bids_test['merchandise'].unique())\
 #     .union(set(bids_humans['merchandise'].unique()))\
@@ -30,6 +30,10 @@ bids_humans = pd.read_csv('data/bids_humans.csv', index_col=0)
 bids_bots = pd.read_csv('data/bids_bots.csv', index_col=0)
 bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
 
+############################################################################
+# Gathering basic counts information
+############################################################################
+
 # print "Analyzing huaman data..."
 # info_humans = gather_info(bids_humans)
 # info_humans.to_csv('data/info_humans.csv')
@@ -41,7 +45,6 @@ bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
 # print "Analyzing huaman data..."
 # info_test = gather_info(bids_test)
 # info_test.to_csv('data/info_test.csv')
-
 
 ############################################################################
 # Gathering country counts information
@@ -63,23 +66,41 @@ bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
 # cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
 # cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
+############################################################################
+# Gathering device counts information
+############################################################################
+
+print "Analyzing device huaman data..."
+dinfo_humans = gather_device_info(bids_humans)
+dinfo_humans.to_csv('data/device_info_humans.csv')
+
+print "Analyzing device huaman data..."
+dinfo_bots = gather_device_info(bids_bots)
+dinfo_bots.to_csv('data/device_info_bots.csv')
+
+print "Analyzing device huaman data..."
+dinfo_test = gather_device_info(bids_test)
+dinfo_test.to_csv('data/device_info_test.csv')
+
+dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
+dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
+dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
 
 ############################################################################
 # Gathering bids-by-aucs counts information
 ############################################################################
 
+# print "Analyzing bids-by-aucs humans data..."
+# bbainfo_humans = gather_auc_bids_info(bids_humans)
+# bbainfo_humans.to_csv('data/bba_info_humans.csv', index_label='bidder_id')
 
-print "Analyzing bids-by-aucs humans data..."
-bbainfo_humans = gather_auc_bids_info(bids_humans)
-bbainfo_humans.to_csv('data/bba_info_humans.csv', index_label='bidder_id')
+# print "Analyzing bids-by-aucs bots data..."
+# bbainfo_bots = gather_auc_bids_info(bids_bots)
+# bbainfo_bots.to_csv('data/bba_info_bots.csv', index_label='bidder_id')
 
-print "Analyzing bids-by-aucs bots data..."
-bbainfo_bots = gather_auc_bids_info(bids_bots)
-bbainfo_bots.to_csv('data/bba_info_bots.csv', index_label='bidder_id')
-
-print "Analyzing bids-by-aucs test data..."
-bbainfo_test = gather_auc_bids_info(bids_test)
-bbainfo_test.to_csv('data/bba_info_test.csv', index_label='bidder_id')
+# print "Analyzing bids-by-aucs test data..."
+# bbainfo_test = gather_auc_bids_info(bids_test)
+# bbainfo_test.to_csv('data/bba_info_test.csv', index_label='bidder_id')
 
 # cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
 # cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)

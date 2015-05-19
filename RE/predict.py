@@ -81,6 +81,10 @@ info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
 info_test = append_bba(info_test, bbainfo_test, min_bba)
 
 
+############################################################################
+# Outlier dropping
+############################################################################
+
 bots_outliers = [
     '7fab82fa5eaea6a44eb743bc4bf356b3tarle',
     'f35082c6d72f1f1be3dd23f949db1f577t6wd',
@@ -88,7 +92,6 @@ bots_outliers = [
     '91c749114e26abdb9a4536169f9b4580huern',
     '74a35c4376559c911fdb5e9cfb78c5e4btqew'
 ]
-
 info_bots.drop(bots_outliers, inplace=True)
 
 ############################################################################
