@@ -48,6 +48,16 @@
         smllaer then a certin thershold, then it is consideres wtihin
         a stretk.
 
+## Outliers
+
+* bots with only one bid:
+7fab82fa5eaea6a44eb743bc4bf356b3tarle
+f35082c6d72f1f1be3dd23f949db1f577t6wd
+bd0071b98d9479130e5c053a244fe6f1muj8h
+91c749114e26abdb9a4536169f9b4580huern
+74a35c4376559c911fdb5e9cfb78c5e4btqew
+
+
 ## Second strategy
 
 Useful information to be extracted:

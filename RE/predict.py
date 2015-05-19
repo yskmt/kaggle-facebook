@@ -94,13 +94,12 @@ if 'merchandise' in keys_all:
 else:
     keys_use = keys_all
 
-
-keys_use = [u'au', u'id', u'num_bids', u'bba_1', u'bba_4', u'th',
-            u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls',
-            u'bba_6', u'bba_9', u'ar', u'bba_8', u'bba_7', u'bba_10',
-            u'bba_11', u'num_ips', u'bba_12', u'num_aucs',
-            u'num_countries']
-keys_use = keys_use[:10]
+# keys_use = [u'au', u'id', u'num_bids', u'bba_1', u'bba_4', u'th',
+#             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls',
+#             u'bba_6', u'bba_9', u'ar', u'bba_8', u'bba_7', u'bba_10',
+#             u'bba_11', u'num_ips', u'bba_12', u'num_aucs',
+#             u'num_countries']
+# keys_use = keys_use[:10]
     
 # keys_use = ['num_bids', 'num_aucs', 'num_countries', 'num_ips', 'num_urls']
 
@@ -129,7 +128,7 @@ num_cv = 10
 for i in range(num_cv):
     clf, ra, cs, tpr_50 \
         = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=500, plot_roc=False)
+                     n_estimators=1000, plot_roc=False)
     
     print ra.mean(), ra.std()
     print cs.mean(), cs.std()
@@ -197,6 +196,8 @@ y_test_proba, y_train_proba, _\
 # 70 bidders in test.csv do not have any data in bids.csv. Thus they
 # are not included in analysis/prediction, but they need to be
 # appended in the submission. The prediction of these bidders do not matter.
+
+print "writing a submission file..."
 
 # first method
 submission = pd.DataFrame(y_test_proba, index=info_test.index, columns=['prediction'])
