@@ -42,14 +42,14 @@ num_test = info_test.shape[0]
 # Data appending
 ############################################################################
 
-# if using the merchandise data, dummies needs to be created
-
+############################################################################
+# Merchandise data
 info_humans = append_merchandise(info_humans, drop=True)
 info_bots = append_merchandise(info_bots, drop=True)
 info_test = append_merchandise(info_test, drop=True)
 
-# add country counts that can be significant
-# load countrty info from file
+############################################################################
+# Country data
 cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
 cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
 cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
@@ -64,8 +64,25 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-# bids-by-auction data
-# load bids-by-auction data from file
+# ############################################################################
+# # Device data
+# dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
+# dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
+# dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
+
+# cts_appended = keys_sig+keys_na
+
+# info_humans = append_countries(info_humans, dinfo_humans, cts_appended)
+# info_bots = append_countries(info_bots, dinfo_bots, cts_appended)
+# info_test = append_countries(info_test, dinfo_test, cts_appended)
+
+# info_humans.fillna(0, inplace=True)
+# info_bots.fillna(0, inplace=True)
+# info_test.fillna(0, inplace=True)
+
+
+############################################################################
+# Bids count by auction data
 bbainfo_humans = pd.read_csv('data/bba_info_humans.csv', index_col=0)
 bbainfo_bots = pd.read_csv('data/bba_info_bots.csv', index_col=0)
 bbainfo_test = pd.read_csv('data/bba_info_test.csv', index_col=0)
@@ -80,7 +97,6 @@ info_humans = append_bba(info_humans, bbainfo_humans, min_bba)
 info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
 info_test = append_bba(info_test, bbainfo_test, min_bba)
 
-
 ############################################################################
 # Outlier dropping
 ############################################################################
@@ -94,8 +110,10 @@ bots_outliers = [
 ]
 info_bots.drop(bots_outliers, inplace=True)
 
+
+
 ############################################################################
-# Data dropping
+# Feature dropping
 ############################################################################
 
 keys_all = info_humans.keys()
