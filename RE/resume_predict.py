@@ -24,144 +24,24 @@ from feature_selection import select_k_best_features
 
 
 start_time = time.time()
-print "Loading postprocessed data files..."
 
-humansfile = 'data/info_humans.csv'
-botsfile = 'data/info_bots.csv'
-testfile = 'data/info_test.csv'
+print "Loading preprocessed data files..."
+info_humans = pd.read_csv('data/info_humans_pp.csv', index_col=0)
+info_bots = pd.read_csv('data/info_bots_pp.csv', index_col=0)
+info_test = pd.read_csv('data/info_test_pp.csv', index_col=0)
 
-info_humans = pd.read_csv(humansfile, index_col=0)
-info_bots = pd.read_csv(botsfile, index_col=0)
-info_test = pd.read_csv(testfile, index_col=0)
-
-num_humans = info_humans.shape[0]
-num_bots = info_bots.shape[0]
-num_test = info_test.shape[0]
-
-
-############################################################################
-# Data appending
-############################################################################
-
-############################################################################
-# Merchandise data
-print "Adding merchandise data..."
-info_humans = append_merchandise(info_humans, drop=True)
-info_bots = append_merchandise(info_bots, drop=True)
-info_test = append_merchandise(info_test, drop=True)
-
-############################################################################
-# Country data
-print "Adding country data..."
-cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
-cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
-cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
-
-cts_appended = keys_sig + keys_na
-
-info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
-info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
-info_test = append_countries(info_test, cinfo_test, cts_appended)
-
-info_humans.fillna(0, inplace=True)
-info_bots.fillna(0, inplace=True)
-info_test.fillna(0, inplace=True)
-
-############################################################################
-# Device data
-print "Adding devices data"
-dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
-dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
-dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
-
-devices_appended = dinfo_humans.keys()\
-                               .union(dinfo_bots.keys())\
-                               .union(dinfo_test.keys())
-info_humans = append_device(info_humans, dinfo_humans, devices_appended)
-info_bots = append_device(info_bots, dinfo_bots, devices_appended)
-info_test = append_device(info_test, dinfo_test, devices_appended)
-
-info_humans.fillna(0, inplace=True)
-info_bots.fillna(0, inplace=True)
-info_test.fillna(0, inplace=True)
-
-############################################################################
-# Bids count by auction data
-print "Adding bids-count-by-auction data..."
-bbainfo_humans = pd.read_csv('data/bba_info_humans.csv', index_col=0)
-bbainfo_bots = pd.read_csv('data/bba_info_bots.csv', index_col=0)
-bbainfo_test = pd.read_csv('data/bba_info_test.csv', index_col=0)
-
-# take the minimum of the number of auctions
-min_bba = np.min([bbainfo_humans.shape[1],
-                  bbainfo_bots.shape[1],
-                  bbainfo_test.shape[1]])
-min_bba = 100
-
-info_humans = append_bba(info_humans, bbainfo_humans, min_bba)
-info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
-info_test = append_bba(info_test, bbainfo_test, min_bba)
-
-############################################################################
-# Outlier dropping
-############################################################################
-print "Removing outliers..."
-
-bots_outliers = [
-    '7fab82fa5eaea6a44eb743bc4bf356b3tarle',
-    'f35082c6d72f1f1be3dd23f949db1f577t6wd',
-    'bd0071b98d9479130e5c053a244fe6f1muj8h',
-    '91c749114e26abdb9a4536169f9b4580huern',
-    '74a35c4376559c911fdb5e9cfb78c5e4btqew'
-]
-info_bots.drop(bots_outliers, inplace=True)
 
 
 ############################################################################
 # Feature dropping
 ############################################################################
 print "Dropping features..."
-
 keys_all = info_humans.keys()
-# [u'num_bids', u'num_aucs', u'num_merchs', u'num_devices',
-# u'num_countries', u'num_ips', u'num_urls', u'merchandise'],
-
-# decide which keys to use
-if 'merchandise' in keys_all:
-    keys_use = keys_all.drop(['merchandise'])
-else:
-    keys_use = keys_all
-
-info_humans.fillna(0, inplace=True)
-info_bots.fillna(0, inplace=True)
-info_test.fillna(0, inplace=True)
-
-num_features = 40
-indx_ex, ft_ex = select_k_best_features(num_features, info_humans, info_bots)
-
-keys_use = ft_ex
-
-# 40 features
-# keys_use = [u'au', u'num_bids', u'bba_1', u'id', u'bba_4', u'th',
-#             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls', u'ar',
-#             u'bba_9', u'bba_6', u'bba_8', u'bba_7', u'num_ips', u'bba_10',
-#             u'bba_11', u'bba_12', u'num_aucs', u'num_countries', u'nl', u'bba_14',
-#             u'bba_15', u'bba_16', u'bba_13', u'bba_17', u'bba_20', u'bba_21',
-#             u'sporting goods', u'bba_19', u'bba_18', u'bba_23', u'bba_22',
-#             u'bba_24', u'bba_25', u'bba_29', u'bba_27', u'mobile']
-
-# 22 features
-# keys_use = [u'au', u'id', u'num_bids', u'bba_1', u'bba_4', u'th',
-#             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls',
-#             u'bba_6', u'bba_9', u'ar', u'bba_8', u'bba_7', u'bba_10',
-#             u'bba_11', u'num_ips', u'bba_12', u'num_aucs',
-#             u'num_countries']
-# keys_use = keys_use[:10]
-
-# keys_use = ['num_bids', 'num_aucs', 'num_countries', 'num_ips', 'num_urls']
-
-# , u'num_aucs',u'num_devices',
-# u'num_countries', u'num_ips', u'num_urls']
+keys_use = ['bba_3', 'bba_2', 'num_bids', 'bba_1', 'num_ips', 'phone46', 'au',
+            'phone143', 'phone28', 'phone13', 'th', 'phone17', 'phone290',
+            'phone62', 'phone157', 'phone479', 'phone237', 'phone248', 'phone346',
+            'phone119', 'phone56', 'phone122']
+keys_use = keys_use[:22]
 
 # drop keys
 print "dropping some keys..."
@@ -171,15 +51,6 @@ for key in keys_all:
         info_humans.drop(key, axis=1, inplace=True)
         info_bots.drop(key, axis=1, inplace=True)
         info_test.drop(key, axis=1, inplace=True)
-
-info_humans.to_csv('data/info_humans_pp.csv')
-info_bots.to_csv('data/info_bots_pp.csv')
-info_test.to_csv('data/info_test_pp.csv')
-
-info_humans = read_csv(info_humans.to_csv('data/info_humans_pp.csv')
-info_bots = read_csv('data/info_bots_pp.csv')
-info_test = read_csv('data/info_test_pp.csv')
-
 
 ############################################################################
 # k-fold Cross Validaton
@@ -194,7 +65,7 @@ num_cv = 5
 for i in range(num_cv):
     clf, ra, cs, tpr_50 \
         = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=1000, plot_roc=False)
+                     n_estimators=2000, plot_roc=False)
 
     print ra.mean(), ra.std()
     print cs.mean(), cs.std()
@@ -220,7 +91,7 @@ print clf_score.mean(), clf_score.std()
 
 y_test_proba, y_train_proba, _\
     = fit_and_predict(info_humans, info_bots, info_test, model='ET',
-                      n_estimators=1000, p_use=None, plotting=False)
+                      n_estimators=1000, p_use=None, plotting=True)
 
 ############################################################################
 # xgboost: CV

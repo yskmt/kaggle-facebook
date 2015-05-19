@@ -175,27 +175,27 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
         
     return clf, roc_auc, clf_score, tpr_50
 
-
 def fit_and_predict(info_humans, info_bots, info_test,
-                    n_estimators=1000, p_use=None, cv=None):
+                    n_estimators=1000, p_use=None, model="ET", plotting=False):
 
     num_humans = len(info_humans)
     num_bots = len(info_bots)
-    num_test = len(info_test)
+    # num_test = len(info_test)
 
     if p_use is not None:
         num_bots_use = int(num_bots)
-        num_humans_use = int(num_humans*p_use)
+        num_humans_use = int(num_humans * p_use)
 
         indx_bots = np.random.choice(num_bots, num_bots_use, replace=False)
-        indx_humans = np.random.choice(num_humans, num_humans_use, replace=False)
+        indx_humans = np.random.choice(
+            num_humans, num_humans_use, replace=False)
 
         info_humans = info_humans.iloc[indx_humans]
         info_bots = info_bots.iloc[indx_bots]
 
         num_bots = num_bots_use
         num_humans = num_humans_use
-
+        
     # combine humans and bots data to create given data
     info_given = pd.concat([info_humans, info_bots], axis=0)
     labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
@@ -212,28 +212,20 @@ def fit_and_predict(info_humans, info_bots, info_test,
     X_test = info_test.sort(axis=1).as_matrix()
 
     features = info_given.sort(axis=1).keys()
-    
-    # xgboost!
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10}
-    num_rounds = n_estimators
-    
-    if type(cv) == int:
-        cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
-                           metrics={'rmse', 'error', 'auc'}, seed=0)
-        return 0, 0, cv_result
-    elif cv == 'RF':
+
+
+    if model == 'RF':
         # randomforest!
         clf = RandomForestClassifier(n_estimators=n_estimators,
                                      class_weight='auto', verbose=1)
         clf.fit(X_train, y_train)
         y_pred = clf.predict_proba(X_test)
         y_train_pred = clf.predict_proba(X_train)
-        return y_pred[:,1], y_train_pred[:,1], 0
+        return y_pred[:, 1], y_train_pred[:, 1], 0
 
-    elif cv == 'ET':
+    elif model == 'ET':
         clf = ExtraTreesClassifier(n_estimators=n_estimators,
-                                   random_state=0)
+                                   random_state=0, class_weight='auto')
         clf.fit(X_train, y_train)
         importances = clf.feature_importances_
 
@@ -248,29 +240,137 @@ def fit_and_predict(info_humans, info_bots, info_test,
             print("%d. feature %d: %s = (%f)"
                   % (f, indices[f], features[indices[f]], importances[indices[f]]))
 
-        print (features[indices])[:22]
-            
-        # # Plot the feature importances of the forest
-        # plt.figure()
-        # plt.title("Feature importances")
-        # plt.bar(range(len(features)), importances[indices],
-        #         color="r", yerr=std[indices], align="center")
-        # plt.xticks(range(len(features)), features[indices])
-        # plt.xlim([-1, len(features)])
-        # plt.show()
+        print list((features[indices])[:22])
+
+        # Plot the feature importances of the forest
+        if plotting:
+            plt.figure()
+            plt.title("Feature importances")
+            plt.bar(range(len(features)), importances[indices],
+                    color="r", yerr=std[indices], align="center")
+            plt.xticks(range(len(features)), features[indices])
+            plt.xlim([-1, len(features)])
+            plt.show()
 
         y_pred = clf.predict_proba(X_test)
         y_train_pred = clf.predict_proba(X_train)
 
-        return y_pred[:,1], y_train_pred[:,1], 0
-    else:
+        return y_pred[:, 1], y_train_pred[:, 1], 0
+    elif model == "XGB":
+        # xgboost!
+        dtrain = xgb.DMatrix(X_train, label=y_train)
+        params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10}
+        num_rounds = n_estimators
+        
         evallist = [(dtrain, 'train')]
         bst = xgb.train(params, dtrain, num_rounds, evallist)
         dtest = xgb.DMatrix(X_test)
         y_pred = bst.predict(dtest)
         y_train_pred = bst.predict(dtrain)
-        
+
         return y_pred, y_train_pred, y_train, 0
+
+    elif model == "XGB_CV":
+        cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
+                           metrics={'rmse', 'error', 'auc'}, seed=0)
+        return 0, 0, cv_result
+    
+
+# def fit_and_predict(info_humans, info_bots, info_test,
+#                     n_estimators=1000, p_use=None, cv=None):
+
+#     num_humans = len(info_humans)
+#     num_bots = len(info_bots)
+#     num_test = len(info_test)
+
+#     if p_use is not None:
+#         num_bots_use = int(num_bots)
+#         num_humans_use = int(num_humans*p_use)
+
+#         indx_bots = np.random.choice(num_bots, num_bots_use, replace=False)
+#         indx_humans = np.random.choice(num_humans, num_humans_use, replace=False)
+
+#         info_humans = info_humans.iloc[indx_humans]
+#         info_bots = info_bots.iloc[indx_bots]
+
+#         num_bots = num_bots_use
+#         num_humans = num_humans_use
+
+#     # combine humans and bots data to create given data
+#     info_given = pd.concat([info_humans, info_bots], axis=0)
+#     labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
+#     num_given = len(labels_train)
+
+#     # shuffle just in case
+#     index_sh = np.random.choice(num_given, num_given, replace=False)
+#     info_given = info_given.iloc[index_sh]
+#     labels_train = labels_train[index_sh]
+
+#     # get matrices forms
+#     X_train = info_given.sort(axis=1).as_matrix()
+#     y_train = labels_train
+#     X_test = info_test.sort(axis=1).as_matrix()
+
+#     features = info_given.sort(axis=1).keys()
+    
+#     # xgboost!
+#     dtrain = xgb.DMatrix(X_train, label=y_train)
+#     params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10}
+#     num_rounds = n_estimators
+    
+#     if type(cv) == int:
+#         cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
+#                            metrics={'rmse', 'error', 'auc'}, seed=0)
+#         return 0, 0, cv_result
+#     elif cv == 'RF':
+#         # randomforest!
+#         clf = RandomForestClassifier(n_estimators=n_estimators,
+#                                      class_weight='auto', verbose=1)
+#         clf.fit(X_train, y_train)
+#         y_pred = clf.predict_proba(X_test)
+#         y_train_pred = clf.predict_proba(X_train)
+#         return y_pred[:,1], y_train_pred[:,1], 0
+
+#     elif cv == 'ET':
+#         clf = ExtraTreesClassifier(n_estimators=n_estimators,
+#                                    random_state=0)
+#         clf.fit(X_train, y_train)
+#         importances = clf.feature_importances_
+
+#         std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+#                      axis=0)
+#         indices = np.argsort(importances)[::-1]
+
+#         # Print the feature ranking
+#         print("Feature ranking:")
+
+#         for f in range(len(features)):
+#             print("%d. feature %d: %s = (%f)"
+#                   % (f, indices[f], features[indices[f]], importances[indices[f]]))
+
+#         print (features[indices])[:22]
+            
+#         # # Plot the feature importances of the forest
+#         # plt.figure()
+#         # plt.title("Feature importances")
+#         # plt.bar(range(len(features)), importances[indices],
+#         #         color="r", yerr=std[indices], align="center")
+#         # plt.xticks(range(len(features)), features[indices])
+#         # plt.xlim([-1, len(features)])
+#         # plt.show()
+
+#         y_pred = clf.predict_proba(X_test)
+#         y_train_pred = clf.predict_proba(X_train)
+
+#         return y_pred[:,1], y_train_pred[:,1], 0
+#     else:
+#         evallist = [(dtrain, 'train')]
+#         bst = xgb.train(params, dtrain, num_rounds, evallist)
+#         dtest = xgb.DMatrix(X_test)
+#         y_pred = bst.predict(dtest)
+#         y_train_pred = bst.predict(dtrain)
+        
+#         return y_pred, y_train_pred, y_train, 0
 
 
 

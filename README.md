@@ -47,6 +47,11 @@
       * Calculate the difference in time between each bid and if it is
         smllaer then a certin thershold, then it is consideres wtihin
         a stretk.
+* Feature selection
+    * Student t-test
+    * Chi2 test
+    * Get the correlation among features and remove the one with high
+      correlation.
 
 ## Outliers
 
@@ -130,3 +135,12 @@ outlier removed:
 n_features=22
 0.940344774491 0.0194237716926
 0.959678707813 0.000498810944577
+
+n_est = 1000
+['bba_3', 'bba_2', 'num_bids', 'bba_1', 'num_ips', 'phone46', 'au',
+'phone143', 'phone28', 'th', 'phone13', 'phone17', 'phone62', 'phone290',
+'phone157', 'phone479', 'phone237', 'phone346', 'phone248', 'phone119', 
+'phone56', 'phone122']
+
+0.927225232133 0.0208572435834
+0.959880471005 0.00168220270904
