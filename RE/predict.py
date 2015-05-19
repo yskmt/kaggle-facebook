@@ -19,7 +19,8 @@ from sklearn.metrics import roc_curve, auc
 from fb_funcs import (predict_usample, append_merchandise, predict_cv,
                       fit_and_predict,
                       append_countries, keys_sig, keys_na,
-                      append_bba)
+                      append_bba, append_device)
+from feature_selection import select_k_best_features
 
 
 start_time = time.time()
@@ -44,17 +45,19 @@ num_test = info_test.shape[0]
 
 ############################################################################
 # Merchandise data
+print "Adding merchandise data..."
 info_humans = append_merchandise(info_humans, drop=True)
 info_bots = append_merchandise(info_bots, drop=True)
 info_test = append_merchandise(info_test, drop=True)
 
 ############################################################################
 # Country data
+print "Adding country data..."
 cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
 cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
 cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
-cts_appended = keys_sig+keys_na
+cts_appended = keys_sig + keys_na
 
 info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
 info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
@@ -64,25 +67,27 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-# ############################################################################
-# # Device data
-# dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
-# dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
-# dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
+############################################################################
+# Device data
+print "Adding devices data"
+dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
+dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
+dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
 
-# cts_appended = keys_sig+keys_na
+devices_appended = dinfo_humans.keys()\
+                               .union(dinfo_bots.keys())\
+                               .union(dinfo_test.keys())
+info_humans = append_device(info_humans, dinfo_humans, devices_appended)
+info_bots = append_device(info_bots, dinfo_bots, devices_appended)
+info_test = append_device(info_test, dinfo_test, devices_appended)
 
-# info_humans = append_countries(info_humans, dinfo_humans, cts_appended)
-# info_bots = append_countries(info_bots, dinfo_bots, cts_appended)
-# info_test = append_countries(info_test, dinfo_test, cts_appended)
-
-# info_humans.fillna(0, inplace=True)
-# info_bots.fillna(0, inplace=True)
-# info_test.fillna(0, inplace=True)
-
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
 
 ############################################################################
 # Bids count by auction data
+print "Adding bids-count-by-auction data..."
 bbainfo_humans = pd.read_csv('data/bba_info_humans.csv', index_col=0)
 bbainfo_bots = pd.read_csv('data/bba_info_bots.csv', index_col=0)
 bbainfo_test = pd.read_csv('data/bba_info_test.csv', index_col=0)
@@ -100,6 +105,7 @@ info_test = append_bba(info_test, bbainfo_test, min_bba)
 ############################################################################
 # Outlier dropping
 ############################################################################
+print "Removing outliers..."
 
 bots_outliers = [
     '7fab82fa5eaea6a44eb743bc4bf356b3tarle',
@@ -111,10 +117,10 @@ bots_outliers = [
 info_bots.drop(bots_outliers, inplace=True)
 
 
-
 ############################################################################
 # Feature dropping
 ############################################################################
+print "Dropping features..."
 
 keys_all = info_humans.keys()
 # [u'num_bids', u'num_aucs', u'num_merchs', u'num_devices',
@@ -126,6 +132,15 @@ if 'merchandise' in keys_all:
 else:
     keys_use = keys_all
 
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
+
+num_features = 40
+indx_ex, ft_ex = select_k_best_features(num_features, info_humans, info_bots)
+
+keys_use = ft_ex
+
 # 40 features
 # keys_use = [u'au', u'num_bids', u'bba_1', u'id', u'bba_4', u'th',
 #             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls', u'ar',
@@ -136,21 +151,21 @@ else:
 #             u'bba_24', u'bba_25', u'bba_29', u'bba_27', u'mobile']
 
 # 22 features
-keys_use = [u'au', u'id', u'num_bids', u'bba_1', u'bba_4', u'th',
-            u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls',
-            u'bba_6', u'bba_9', u'ar', u'bba_8', u'bba_7', u'bba_10',
-            u'bba_11', u'num_ips', u'bba_12', u'num_aucs',
-            u'num_countries']
+# keys_use = [u'au', u'id', u'num_bids', u'bba_1', u'bba_4', u'th',
+#             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls',
+#             u'bba_6', u'bba_9', u'ar', u'bba_8', u'bba_7', u'bba_10',
+#             u'bba_11', u'num_ips', u'bba_12', u'num_aucs',
+#             u'num_countries']
 # keys_use = keys_use[:10]
-    
+
 # keys_use = ['num_bids', 'num_aucs', 'num_countries', 'num_ips', 'num_urls']
 
 # , u'num_aucs',u'num_devices',
-            # u'num_countries', u'num_ips', u'num_urls']
-    
+# u'num_countries', u'num_ips', u'num_urls']
+
 # drop keys
 print "dropping some keys..."
-print "The keys to use: ", list(keys_use)
+print "The keys to use: \n", list(keys_use)
 for key in keys_all:
     if key not in keys_use:
         info_humans.drop(key, axis=1, inplace=True)
@@ -161,6 +176,7 @@ for key in keys_all:
 ############################################################################
 # k-fold Cross Validaton
 ############################################################################
+print "K-fold CV..."
 
 roc_auc = []
 roc_auc_std = []
@@ -171,11 +187,11 @@ for i in range(num_cv):
     clf, ra, cs, tpr_50 \
         = predict_cv(info_humans, info_bots, n_folds=5,
                      n_estimators=1000, plot_roc=False)
-    
+
     print ra.mean(), ra.std()
     print cs.mean(), cs.std()
     # print tpr_50.mean(), tpr_50.std()
-    
+
     roc_auc.append(ra.mean())
     roc_auc_std.append(ra.std())
     clf_score.append(cs.mean())
@@ -242,7 +258,8 @@ y_test_proba, y_train_proba, _\
 print "writing a submission file..."
 
 # first method
-submission = pd.DataFrame(y_test_proba, index=info_test.index, columns=['prediction'])
+submission = pd.DataFrame(
+    y_test_proba, index=info_test.index, columns=['prediction'])
 test_bidders = pd.read_csv('data/test.csv', index_col=0)
 
 submission = pd.concat([submission, test_bidders], axis=1)
@@ -257,7 +274,7 @@ submission.to_csv('data/submission.csv', columns=['prediction'],
 # test_ids_append = list(
 #     set(test_ids_all.values).difference(set(test_ids.values)))
 # submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
-#                                  index=test_ids_append, columns=['prediction'])
+# index=test_ids_append, columns=['prediction'])
 
 # # Make as submission file!
 # submission = pd.DataFrame(y_test_proba, index=test_ids,

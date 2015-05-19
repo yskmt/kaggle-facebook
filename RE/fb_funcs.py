@@ -328,6 +328,32 @@ def append_countries(info, cinfo, countries):
     return info
 
 
+def append_device(info, dinfo, devices):
+    """
+    Append device counts
+
+    info: bidder info
+    dinfo: bidder country info
+    countries: countries to be appended
+    """
+
+    devices_appended = []
+    for key in devices:
+        # for key in list(dinfo.keys()):
+        if key in list(dinfo.keys()):
+            devices_appended.append(dinfo[key])
+        else:
+            # just create zero-column
+            devices_appended.append(
+                pd.DataFrame(np.zeros(len(dinfo)), index=dinfo.index, columns=[key]))
+
+    devices_appended.append(info)
+
+    info = pd.concat(devices_appended, axis=1)
+
+    return info
+
+
 def gather_info(bids_data):
     """
     Gather the useful infromation from bids data.
