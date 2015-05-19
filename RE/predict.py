@@ -80,6 +80,17 @@ info_humans = append_bba(info_humans, bbainfo_humans, min_bba)
 info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
 info_test = append_bba(info_test, bbainfo_test, min_bba)
 
+
+bots_outliers = [
+    '7fab82fa5eaea6a44eb743bc4bf356b3tarle',
+    'f35082c6d72f1f1be3dd23f949db1f577t6wd',
+    'bd0071b98d9479130e5c053a244fe6f1muj8h',
+    '91c749114e26abdb9a4536169f9b4580huern',
+    '74a35c4376559c911fdb5e9cfb78c5e4btqew'
+]
+
+info_bots.drop(bots_outliers, inplace=True)
+
 ############################################################################
 # Data dropping
 ############################################################################
@@ -94,6 +105,16 @@ if 'merchandise' in keys_all:
 else:
     keys_use = keys_all
 
+# 40 features
+# keys_use = [u'au', u'num_bids', u'bba_1', u'id', u'bba_4', u'th',
+#             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls', u'ar',
+#             u'bba_9', u'bba_6', u'bba_8', u'bba_7', u'num_ips', u'bba_10',
+#             u'bba_11', u'bba_12', u'num_aucs', u'num_countries', u'nl', u'bba_14',
+#             u'bba_15', u'bba_16', u'bba_13', u'bba_17', u'bba_20', u'bba_21',
+#             u'sporting goods', u'bba_19', u'bba_18', u'bba_23', u'bba_22',
+#             u'bba_24', u'bba_25', u'bba_29', u'bba_27', u'mobile']
+
+# 22 features
 # keys_use = [u'au', u'id', u'num_bids', u'bba_1', u'bba_4', u'th',
 #             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls',
 #             u'bba_6', u'bba_9', u'ar', u'bba_8', u'bba_7', u'bba_10',
@@ -124,7 +145,7 @@ roc_auc = []
 roc_auc_std = []
 clf_score = []
 
-num_cv = 10
+num_cv = 5
 for i in range(num_cv):
     clf, ra, cs, tpr_50 \
         = predict_cv(info_humans, info_bots, n_folds=5,

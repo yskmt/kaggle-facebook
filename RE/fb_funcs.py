@@ -248,7 +248,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
             print("%d. feature %d: %s = (%f)"
                   % (f, indices[f], features[indices[f]], importances[indices[f]]))
 
-        print (features[indices])[:22]
+        print list((features[indices])[:22])
             
         # Plot the feature importances of the forest
         plt.figure()
