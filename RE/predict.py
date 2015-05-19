@@ -158,6 +158,16 @@ keys_use = ft_ex
 #             u'num_countries']
 # keys_use = keys_use[:10]
 
+
+# 40 out of 7495 features
+keys_use = ['bba_5', 'bba_4', 'bba_3', 'phone46', 'num_bids', 'bba_6', 'bba_8',
+            'bba_2', 'bba_1', 'bba_7', 'au', 'bba_10', 'bba_9', 'bba_12',
+            'bba_14', 'phone195', 'bba_11', 'num_aucs', 'bba_13', 'phone143',
+            'bba_15', 'phone63', 'bba_16', 'num_ips', 'bba_20', 'bba_17',
+            'bba_18', 'phone55', 'num_urls', 'phone1030', 'num_countries',
+            'phone150', 'phone144', 'bba_21', 'num_devices', 'phone33', 'bba_19',
+            'bba_22', 'phone1026', 'bba_24']
+
 # keys_use = ['num_bids', 'num_aucs', 'num_countries', 'num_ips', 'num_urls']
 
 # , u'num_aucs',u'num_devices',
@@ -172,46 +182,46 @@ for key in keys_all:
         info_bots.drop(key, axis=1, inplace=True)
         info_test.drop(key, axis=1, inplace=True)
 
-info_humans.to_csv('data/info_humans_pp.csv')
-info_bots.to_csv('data/info_bots_pp.csv')
-info_test.to_csv('data/info_test_pp.csv')
+info_humans.to_csv('data/info_humans_pp2.csv')
+info_bots.to_csv('data/info_bots_pp2.csv')
+info_test.to_csv('data/info_test_pp2.csv')
 
-info_humans = read_csv(info_humans.to_csv('data/info_humans_pp.csv')
-info_bots = read_csv('data/info_bots_pp.csv')
-info_test = read_csv('data/info_test_pp.csv')
+# info_humans = read_csv(info_humans.to_csv('data/info_humans_pp.csv')
+# info_bots = read_csv('data/info_bots_pp.csv')
+# info_test = read_csv('data/info_test_pp.csv')
 
 
 ############################################################################
 # k-fold Cross Validaton
 ############################################################################
-print "K-fold CV..."
+# print "K-fold CV..."
 
-roc_auc = []
-roc_auc_std = []
-clf_score = []
+# roc_auc = []
+# roc_auc_std = []
+# clf_score = []
 
-num_cv = 5
-for i in range(num_cv):
-    clf, ra, cs, tpr_50 \
-        = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=1000, plot_roc=False)
+# num_cv = 5
+# for i in range(num_cv):
+#     clf, ra, cs, tpr_50 \
+#         = predict_cv(info_humans, info_bots, n_folds=5,
+#                      n_estimators=1000, plot_roc=False)
 
-    print ra.mean(), ra.std()
-    print cs.mean(), cs.std()
-    # print tpr_50.mean(), tpr_50.std()
+#     print ra.mean(), ra.std()
+#     print cs.mean(), cs.std()
+#     # print tpr_50.mean(), tpr_50.std()
 
-    roc_auc.append(ra.mean())
-    roc_auc_std.append(ra.std())
-    clf_score.append(cs.mean())
+#     roc_auc.append(ra.mean())
+#     roc_auc_std.append(ra.std())
+#     clf_score.append(cs.mean())
 
-roc_auc = np.array(roc_auc)
-roc_auc_std = np.array(roc_auc_std)
-clf_score = np.array(clf_score)
+# roc_auc = np.array(roc_auc)
+# roc_auc_std = np.array(roc_auc_std)
+# clf_score = np.array(clf_score)
 
-print ""
-print roc_auc.mean(), roc_auc_std.mean()
-print clf_score.mean(), clf_score.std()
-# print tpr_50
+# print ""
+# print roc_auc.mean(), roc_auc_std.mean()
+# print clf_score.mean(), clf_score.std()
+# # print tpr_50
 
 
 ############################################################################
@@ -220,7 +230,7 @@ print clf_score.mean(), clf_score.std()
 
 y_test_proba, y_train_proba, _\
     = fit_and_predict(info_humans, info_bots, info_test, model='ET',
-                      n_estimators=1000, p_use=None, plotting=False)
+                      n_estimators=1000, p_use=None, plotting=True)
 
 ############################################################################
 # xgboost: CV
