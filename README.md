@@ -144,4 +144,14 @@ n_est = 1000
 
 0.927225232133 0.0208572435834
 0.959880471005 0.00168220270904
-q
+
+
+n_est = 1000
+chose 10*4 most important features from each category by ET
+['num_bids', 'au', 'num_aucs', 'bba_15', 'num_ips', 'bba_14', 'num_devices',
+ 'num_countries', 'bba_17', 'num_urls', 'phone150', 'bba_18', 'bba_19',
+ 'phone55', 'phone33', 'bba_30', 'phone739', 'phone1030', 'my', 'bba_31',
+ 'bba_35', 'phone136', 'ca', 'bba_32', 'bba_33', 'cn', 'phone58', 'phone640',
+ 'za', 'in', 'phone15', 'phone996', 'ar', 'ru', 'ch', 'ec']
+0.945600450453 0.0169479757094
+0.960789561914 0.000756052446392

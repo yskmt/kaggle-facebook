@@ -24,6 +24,10 @@ from feature_selection import select_k_best_features
 
 
 start_time = time.time()
+
+############################################################################
+# Load bsic data
+############################################################################
 print "Loading postprocessed data files..."
 
 humansfile = 'data/info_humans.csv'
@@ -123,25 +127,23 @@ info_bots.drop(bots_outliers, inplace=True)
 print "Selecting features..."
 
 # first dropping merchandise feature...
+keys_all = info_humans.keys()
 if 'merchandise' in keys_all:
     keys_use = keys_all.drop(['merchandise'])
 else:
     keys_use = keys_all
 
 
-keys_all = info_humans.keys()
-
 info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
 # features selection by chi2 test
-num_features = 40
-indx_ex, ft_ex = select_k_best_features(num_features, info_humans, info_bots)
+# num_features = 40
+# indx_ex, ft_ex = select_k_best_features(num_features, info_humans, info_bots)
+# keys_use = ft_ex
 
-keys_use = ft_ex
-
-# 40 out of 7495 features
+# 40 out of 7495 features globally
 # by chi2 test
 # keys_use = ['au', 'bba_1', 'bba_2', 'bba_3', 'num_bids', 'num_ips',
 #             'phone1029', 'phone113', 'phone115', 'phone118',
@@ -153,7 +155,7 @@ keys_use = ft_ex
 #             'phone524', 'phone528', 'phone56', 'phone62', 'phone718',
 #             'phone796', 'th']
 
-# # by using extratrees clf
+# # by using extratrees clf globally
 # keys_use = ['bba_5', 'bba_4', 'bba_3', 'phone46', 'num_bids', 'bba_6', 'bba_8',
 #             'bba_2', 'bba_1', 'bba_7', 'au', 'bba_10', 'bba_9', 'bba_12',
 #             'bba_14', 'phone195', 'bba_11', 'num_aucs', 'bba_13', 'phone143',
@@ -163,8 +165,8 @@ keys_use = ft_ex
 #             'bba_22', 'phone1026', 'bba_24']
 # keys_use = keys_use[:31]
 
-# 10 features selected from each category
-keys_use = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
+# # 10*4 features selected from each category by chi2
+keys_use1 = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
             'phone237', 'phone389', 'phone46', 'phone62', 'phone718',
             'at', 'au', 'ca', 'de', 'in', 'jp', 'kr', 'ru', 'th',
             'us', 'bba_1', 'bba_14', 'bba_2', 'bba_3', 'bba_4',
@@ -172,6 +174,19 @@ keys_use = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
             'jewelry', 'mobile', 'num_aucs', 'num_bids',
             'num_countries', 'num_devices', 'num_ips', 'num_urls',
             'sporting goods']
+
+# 10*4 features selected from each category by ET
+keys_use2 = ['au', 'num_bids', 'za', 'phone55', 'phone739',
+            'num_devices', 'ca', 'my', 'num_ips', 'num_aucs',
+            'num_urls', 'phone996', 'phone150', 'phone640', 'bba_14',
+            'bba_15', 'num_countries', 'phone136', 'in', 'phone33',
+            'cn', 'bba_17', 'ch', 'ru', 'ar', 'bba_19', 'bba_18',
+            'phone58', 'bba_30', 'phone1030', 'bba_31', 'bba_33',
+            'phone15', 'bba_32', 'bba_35', 'ec']
+
+keys_use = list(set(keys_use1).union(keys_use2))
+
+# keys_use = keys_use[:30]
 
 print "Extracting keys..."
 info_humans = info_humans[keys_use]
@@ -204,7 +219,7 @@ num_cv = 5
 for i in range(num_cv):
     clf, ra, cs, tpr_50 \
         = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=1000, plot_roc=False)
+                     n_estimators=2000, plot_roc=False)
 
     print ra.mean(), ra.std()
     print cs.mean(), cs.std()
@@ -230,40 +245,7 @@ print clf_score.mean(), clf_score.std()
 
 y_test_proba, y_train_proba, _\
     = fit_and_predict(info_humans, info_bots, info_test, model='ET',
-                      n_estimators=1000, p_use=None, plot_importance=True)
-
-############################################################################
-# xgboost: CV
-############################################################################
-
-# y_pred, ytrain_pred, cv_result \
-#     = fit_and_predict(info_humans, info_bots, info_test,
-#                       n_estimators=20, p_use=None, cv=5)
-
-# auc = []
-# for i in range(len(cv_result)):
-#     auc.append(float(cv_result[i].split('\t')[1].split(':')[1].split('+')[0]))
-
-# best_itr = np.argmax(auc)
-# auc_std = float(cv_result[11].split('\t')[1].split('+')[1])
-# auc_best = np.max(auc)
-# print "itr:", best_itr, "auc:", auc_best, "+=", auc_std
-
-
-# ############################################################################
-# # xgboost: prediction
-# ############################################################################
-# ytestp = []
-# ytrainp = []
-
-# for i in range(40):
-#     y_test_proba, y_train_pred, y_train, cv_result \
-#         = fit_and_predict(info_humans, info_bots, info_test,
-#                           n_estimators=400, p_use=p_use)
-
-#     ytestp.append(y_test_proba)
-#     ytrainp.append(y_train_pred)
-
+                      n_estimators=2000, p_use=None, plot_importance=True)
 
 ############################################################################
 # submission file generation

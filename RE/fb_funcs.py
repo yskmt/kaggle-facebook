@@ -226,7 +226,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
 
     elif model == 'ET':
         clf = ExtraTreesClassifier(n_estimators=n_estimators,
-                                   random_state=0, class_weight='auto')
+                                   random_state=0)
         clf.fit(X_train, y_train)
         importances = clf.feature_importances_
 
@@ -237,15 +237,15 @@ def fit_and_predict(info_humans, info_bots, info_test,
         # Print the feature ranking
         print("Feature ranking:")
 
-        for f in range(len(features)):
+        for f in range(min(len(features), 40)):
             print("%d. feature %d: %s = (%f)"
                   % (f, indices[f], features[indices[f]], importances[indices[f]]))
 
         # print list((features[indices])[:22])
-        print list((features[indices]))
+        print list((features[indices]))[:40]
 
         # Plot the feature importances of the forest
-        if plotting:
+        if plot_importance:
             plt.figure()
             plt.title("Feature importances")
             plt.bar(range(len(features)), importances[indices],

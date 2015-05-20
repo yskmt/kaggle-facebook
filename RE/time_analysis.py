@@ -1,11 +1,9 @@
-# """
-# preprocess.py
+"""
+time_analysis.py
+Facebook Recruiting IV: Human or Robot?
+author: Yusuke Sakamoto
 
-# Facebook Recruiting IV: Human or Robot?
-
-# author: Yusuke Sakamoto
-
-# """
+"""
 
 import numpy as np
 import pandas as pd
