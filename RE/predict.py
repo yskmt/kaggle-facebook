@@ -57,8 +57,8 @@ cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
 cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
 cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
-cts_appended = keys_sig + keys_na
-
+# cts_appended = keys_sig + keys_na
+cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
 info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
 info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
 info_test = append_countries(info_test, cinfo_test, cts_appended)
@@ -118,69 +118,70 @@ info_bots.drop(bots_outliers, inplace=True)
 
 
 ############################################################################
-# Feature dropping
+# Feature selection
 ############################################################################
-print "Dropping features..."
+print "Selecting features..."
 
-keys_all = info_humans.keys()
-# [u'num_bids', u'num_aucs', u'num_merchs', u'num_devices',
-# u'num_countries', u'num_ips', u'num_urls', u'merchandise'],
-
-# decide which keys to use
+# first dropping merchandise feature...
 if 'merchandise' in keys_all:
     keys_use = keys_all.drop(['merchandise'])
 else:
     keys_use = keys_all
 
+
+keys_all = info_humans.keys()
+
 info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
+# features selection by chi2 test
 num_features = 40
 indx_ex, ft_ex = select_k_best_features(num_features, info_humans, info_bots)
 
 keys_use = ft_ex
 
-# 40 features
-# keys_use = [u'au', u'num_bids', u'bba_1', u'id', u'bba_4', u'th',
-#             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls', u'ar',
-#             u'bba_9', u'bba_6', u'bba_8', u'bba_7', u'num_ips', u'bba_10',
-#             u'bba_11', u'bba_12', u'num_aucs', u'num_countries', u'nl', u'bba_14',
-#             u'bba_15', u'bba_16', u'bba_13', u'bba_17', u'bba_20', u'bba_21',
-#             u'sporting goods', u'bba_19', u'bba_18', u'bba_23', u'bba_22',
-#             u'bba_24', u'bba_25', u'bba_29', u'bba_27', u'mobile']
-
-# 22 features
-# keys_use = [u'au', u'id', u'num_bids', u'bba_1', u'bba_4', u'th',
-#             u'bba_5', u'num_devices', u'bba_2', u'bba_3', u'num_urls',
-#             u'bba_6', u'bba_9', u'ar', u'bba_8', u'bba_7', u'bba_10',
-#             u'bba_11', u'num_ips', u'bba_12', u'num_aucs',
-#             u'num_countries']
-# keys_use = keys_use[:10]
-
-
 # 40 out of 7495 features
-keys_use = ['bba_5', 'bba_4', 'bba_3', 'phone46', 'num_bids', 'bba_6', 'bba_8',
-            'bba_2', 'bba_1', 'bba_7', 'au', 'bba_10', 'bba_9', 'bba_12',
-            'bba_14', 'phone195', 'bba_11', 'num_aucs', 'bba_13', 'phone143',
-            'bba_15', 'phone63', 'bba_16', 'num_ips', 'bba_20', 'bba_17',
-            'bba_18', 'phone55', 'num_urls', 'phone1030', 'num_countries',
-            'phone150', 'phone144', 'bba_21', 'num_devices', 'phone33', 'bba_19',
-            'bba_22', 'phone1026', 'bba_24']
+# by chi2 test
+# keys_use = ['au', 'bba_1', 'bba_2', 'bba_3', 'num_bids', 'num_ips',
+#             'phone1029', 'phone113', 'phone115', 'phone118',
+#             'phone119', 'phone1211', 'phone122', 'phone13',
+#             'phone143', 'phone157', 'phone17', 'phone201', 'phone204',
+#             'phone237', 'phone248', 'phone278', 'phone28', 'phone290',
+#             'phone322', 'phone346', 'phone386', 'phone389',
+#             'phone391', 'phone46', 'phone466', 'phone479', 'phone503',
+#             'phone524', 'phone528', 'phone56', 'phone62', 'phone718',
+#             'phone796', 'th']
 
-# keys_use = ['num_bids', 'num_aucs', 'num_countries', 'num_ips', 'num_urls']
+# # by using extratrees clf
+# keys_use = ['bba_5', 'bba_4', 'bba_3', 'phone46', 'num_bids', 'bba_6', 'bba_8',
+#             'bba_2', 'bba_1', 'bba_7', 'au', 'bba_10', 'bba_9', 'bba_12',
+#             'bba_14', 'phone195', 'bba_11', 'num_aucs', 'bba_13', 'phone143',
+#             'bba_15', 'phone63', 'bba_16', 'num_ips', 'bba_20', 'bba_17',
+#             'bba_18', 'phone55', 'num_urls', 'phone1030', 'num_countries',
+#             'phone150', 'phone144', 'bba_21', 'num_devices', 'phone33', 'bba_19',
+#             'bba_22', 'phone1026', 'bba_24']
+# keys_use = keys_use[:31]
 
-# , u'num_aucs',u'num_devices',
-# u'num_countries', u'num_ips', u'num_urls']
+# 10 features selected from each category
+keys_use = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
+            'phone237', 'phone389', 'phone46', 'phone62', 'phone718',
+            'at', 'au', 'ca', 'de', 'in', 'jp', 'kr', 'ru', 'th',
+            'us', 'bba_1', 'bba_14', 'bba_2', 'bba_3', 'bba_4',
+            'bba_5', 'bba_6', 'bba_7', 'bba_8', 'bba_9', 'computers',
+            'jewelry', 'mobile', 'num_aucs', 'num_bids',
+            'num_countries', 'num_devices', 'num_ips', 'num_urls',
+            'sporting goods']
 
-# # drop keys
-# print "dropping some keys..."
-# print "The keys to use: \n", list(keys_use)
-# for key in keys_all:
-#     if key not in keys_use:
-#         info_humans.drop(key, axis=1, inplace=True)
-#         info_bots.drop(key, axis=1, inplace=True)
-#         info_test.drop(key, axis=1, inplace=True)
+print "Extracting keys..."
+info_humans = info_humans[keys_use]
+info_bots = info_bots[keys_use]
+info_test = info_test[keys_use]
+
+
+############################################################################
+# Save/Load preprocessed data
+############################################################################
 
 # info_humans.to_csv('data/info_humans_pp2.csv')
 # info_bots.to_csv('data/info_bots_pp2.csv')
@@ -189,13 +190,6 @@ keys_use = ['bba_5', 'bba_4', 'bba_3', 'phone46', 'num_bids', 'bba_6', 'bba_8',
 # info_humans = read_csv(info_humans.to_csv('data/info_humans_pp.csv')
 # info_bots = read_csv('data/info_bots_pp.csv')
 # info_test = read_csv('data/info_test_pp.csv')
-
-print "Extracting keys..."
-keys_use = keys_use[:31]
-info_humans = info_humans[keys_use]
-info_bots = info_bots[keys_use]
-info_test = info_test[keys_use]
-
 
 ############################################################################
 # k-fold Cross Validaton
@@ -236,7 +230,7 @@ print clf_score.mean(), clf_score.std()
 
 y_test_proba, y_train_proba, _\
     = fit_and_predict(info_humans, info_bots, info_test, model='ET',
-                      n_estimators=1000, p_use=None, plotting=False)
+                      n_estimators=1000, p_use=None, plot_importance=True)
 
 ############################################################################
 # xgboost: CV
@@ -308,38 +302,3 @@ submission.to_csv('data/submission.csv', columns=['prediction'],
 
 # end_time = time.time()
 # print "Time elapsed: %.2f" % (end_time - start_time)
-
-
-############################################################################
-# k-fold Cross Validation with Bagging
-############################################################################
-
-# # under/over sampleing
-# num_humans_use = num_humans
-# num_bots_use = num_bots
-
-# p_valid = 0.2
-# num_sim = 20
-
-# auc_score = []
-# accuracy = []
-# tpr = []
-# for i in range(num_sim):
-#     print "%d/%d" %(i, num_sim)
-
-#     clf, roc_auc, clf_score, tpr_50\
-#         = predict_usample(num_humans, num_humans_use, num_bots_use,
-#                           info_humans, info_bots, plot_roc=False,
-#                           p_valid=p_valid)
-
-#     auc_score.append(roc_auc)
-#     accuracy.append(clf_score)
-#     tpr.append(tpr_50)
-
-# auc_score = np.array(auc_score)
-# accuracy = np.array(accuracy)
-# tpr = np.array(tpr)
-
-# print "auc score:", auc_score.mean(), auc_score.std()
-# print "tpr score:", tpr.mean(), tpr.std()
-# print "accuracy:", accuracy.mean(), accuracy.std()

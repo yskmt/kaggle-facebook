@@ -71,7 +71,7 @@ Useful information to be extracted:
 2. Total number of auctions participated
 3. Number of bids in each auction: should be sorted by descending order
    and 0 for no bid.
-4. Numbed of __ by a bidder
+4. Number of __ by a bidder
     * auctions participated for each merchandise type 
     * devices
     * countries
@@ -144,3 +144,4 @@ n_est = 1000
 
 0.927225232133 0.0208572435834
 0.959880471005 0.00168220270904
+q
