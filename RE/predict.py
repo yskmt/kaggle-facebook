@@ -165,26 +165,57 @@ info_test.fillna(0, inplace=True)
 #             'bba_22', 'phone1026', 'bba_24']
 # keys_use = keys_use[:31]
 
-# # 10*4 features selected from each category by chi2
-keys_use1 = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
-            'phone237', 'phone389', 'phone46', 'phone62', 'phone718',
-            'at', 'au', 'ca', 'de', 'in', 'jp', 'kr', 'ru', 'th',
-            'us', 'bba_1', 'bba_14', 'bba_2', 'bba_3', 'bba_4',
-            'bba_5', 'bba_6', 'bba_7', 'bba_8', 'bba_9', 'computers',
-            'jewelry', 'mobile', 'num_aucs', 'num_bids',
-            'num_countries', 'num_devices', 'num_ips', 'num_urls',
-            'sporting goods']
+# # # 10*4 features selected from each category by chi2
+# keys_use1 = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
+#             'phone237', 'phone389', 'phone46', 'phone62', 'phone718',
+#             'at', 'au', 'ca', 'de', 'in', 'jp', 'kr', 'ru', 'th',
+#             'us', 'bba_1', 'bba_14', 'bba_2', 'bba_3', 'bba_4',
+#             'bba_5', 'bba_6', 'bba_7', 'bba_8', 'bba_9', 'computers',
+#             'jewelry', 'mobile', 'num_aucs', 'num_bids',
+#             'num_countries', 'num_devices', 'num_ips', 'num_urls',
+#             'sporting goods']
 
-# 10*4 features selected from each category by ET
-keys_use2 = ['au', 'num_bids', 'za', 'phone55', 'phone739',
-            'num_devices', 'ca', 'my', 'num_ips', 'num_aucs',
-            'num_urls', 'phone996', 'phone150', 'phone640', 'bba_14',
-            'bba_15', 'num_countries', 'phone136', 'in', 'phone33',
-            'cn', 'bba_17', 'ch', 'ru', 'ar', 'bba_19', 'bba_18',
-            'phone58', 'bba_30', 'phone1030', 'bba_31', 'bba_33',
-            'phone15', 'bba_32', 'bba_35', 'ec']
+# # 10*4 features selected from each category by ET
+# keys_use2 = ['au', 'num_bids', 'za', 'phone55', 'phone739',
+#             'num_devices', 'ca', 'my', 'num_ips', 'num_aucs',
+#             'num_urls', 'phone996', 'phone150', 'phone640', 'bba_14',
+#             'bba_15', 'num_countries', 'phone136', 'in', 'phone33',
+#             'cn', 'bba_17', 'ch', 'ru', 'ar', 'bba_19', 'bba_18',
+#             'phone58', 'bba_30', 'phone1030', 'bba_31', 'bba_33',
+#             'phone15', 'bba_32', 'bba_35', 'ec']
 
-keys_use = list(set(keys_use1).union(keys_use2))
+# keys_use = list(set(keys_use1).union(keys_use2))
+
+
+
+devi = ['phone136', 'phone640', 'phone739', 'phone150', 'phone15',
+        'phone33', 'phone1030', 'phone996', 'phone58', 'phone55',
+        'phone2287', 'phone205', 'phone224', 'phone90', 'phone3359',
+        'phone143', 'phone168', 'phone144', 'phone728', 'phone6',
+        'phone2330', 'phone28', 'phone25', 'phone1026', 'phone21',
+        'phone239', 'phone22', 'phone219', 'phone195', 'phone46', 'phone63',
+        'phone65', 'phone110', 'phone469']
+
+counti = ['ch', 'cn', 'ca', 'za', 'ec', 'ar', 'au', 'in', 'my', 'ru',
+          'nl', 'no', 'tw', 'id', 'lv', 'lt', 'lu', 'th', 'fr', 'jp', 'bn',
+          'de', 'bh', 'it', 'br', 'ph', 'sg', 'us', 'qa', 'kr', 'uk', 'bf',
+          'sa', 'ua']
+
+bbai = ['bba_35', 'bba_33', 'bba_32', 'bba_31', 'bba_30', 'bba_19',
+        'bba_18', 'bba_15', 'bba_14', 'bba_17', 'bba_16', 'bba_11', 'bba_10',
+        'bba_13', 'bba_12', 'bba_28', 'bba_29', 'bba_20', 'bba_21', 'bba_22',
+        'bba_23', 'bba_24', 'bba_25', 'bba_26', 'bba_27', 'bba_9', 'bba_8',
+        'bba_5', 'bba_4', 'bba_7', 'bba_6', 'bba_1', 'bba_3', 'bba_2']
+
+ci = ['computers', 'office equipment', 'auto parts', 'sporting goods',
+      'books and music', 'clothing', 'furniture', 'jewelry', 'mobile',
+      'home goods']
+
+count_importance = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
+                    'num_urls', 'num_countries', 'num_merchs']
+
+keys_use = count_importance + ci + bbai + counti + devi
+
 
 # keys_use = keys_use[:30]
 
@@ -219,7 +250,7 @@ num_cv = 5
 for i in range(num_cv):
     clf, ra, cs, tpr_50 \
         = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=2000, plot_roc=False)
+                     n_estimators=8000, plot_roc=False)
 
     print ra.mean(), ra.std()
     print cs.mean(), cs.std()
@@ -243,9 +274,9 @@ print clf_score.mean(), clf_score.std()
 # fit and predict
 ############################################################################
 
-y_test_proba, y_train_proba, _\
+y_test_proba, y_train_proba, _, feature_importance\
     = fit_and_predict(info_humans, info_bots, info_test, model='ET',
-                      n_estimators=2000, p_use=None, plot_importance=True)
+                      n_estimators=8000, p_use=None, plot_importance=True)
 
 ############################################################################
 # submission file generation

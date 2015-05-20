@@ -135,7 +135,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
         # clf = RandomForestClassifier(n_estimators=n_estimators,
         # class_weight=None, max_features=None)
-        clf = ExtraTreesClassifier(n_estimators=n_estimators)
+        clf = ExtraTreesClassifier(n_estimators=n_estimators, max_features=0.025)
 
         # clf = SGDClassifier(loss='log')
         # clf = DecisionTreeClassifier()
@@ -225,7 +225,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
         return y_pred[:, 1], y_train_pred[:, 1], 0
 
     elif model == 'ET':
-        clf = ExtraTreesClassifier(n_estimators=n_estimators,
+        clf = ExtraTreesClassifier(n_estimators=n_estimators, max_features=0.025,
                                    random_state=0)
         clf.fit(X_train, y_train)
         importances = clf.feature_importances_
@@ -257,7 +257,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
         y_pred = clf.predict_proba(X_test)
         y_train_pred = clf.predict_proba(X_train)
 
-        return y_pred[:, 1], y_train_pred[:, 1], 0
+        return y_pred[:, 1], y_train_pred[:, 1], 0, list((features[indices]))
     elif model == "XGB":
         # xgboost!
         dtrain = xgb.DMatrix(X_train, label=y_train)

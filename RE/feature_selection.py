@@ -76,12 +76,10 @@ if __name__ == '__main__':
     indx_ex, ft_ex = select_k_best_features(
         num_features, info_humans, info_bots)
 
-
-
-    ############################################################################
+    ##########################################################################
     # Select features from each category
     # Analyze feature importance using ExtraTree clf
-    ############################################################################
+    ##########################################################################
     # devices
     info_humans = pd.read_csv('data/info_humans.csv', index_col=0)
     info_bots = pd.read_csv('data/info_bots.csv', index_col=0)
@@ -131,8 +129,7 @@ if __name__ == '__main__':
             'phone239', 'phone22', 'phone219', 'phone195', 'phone46', 'phone63',
             'phone65', 'phone110', 'phone469']
 
-
-    ############################################################################
+    ##########################################################################
     # countries
     info_humans = pd.read_csv('data/info_humans.csv', index_col=0)
     info_bots = pd.read_csv('data/info_bots.csv', index_col=0)
@@ -175,8 +172,7 @@ if __name__ == '__main__':
               'de', 'bh', 'it', 'br', 'ph', 'sg', 'us', 'qa', 'kr', 'uk', 'bf',
               'sa', 'ua']
 
-
-    ############################################################################
+    ##########################################################################
     # bids-count-by-bots information
     # countries
     info_humans = pd.read_csv('data/info_humans.csv', index_col=0)
@@ -222,7 +218,7 @@ if __name__ == '__main__':
             'bba_23', 'bba_24', 'bba_25', 'bba_26', 'bba_27', 'bba_9', 'bba_8',
             'bba_5', 'bba_4', 'bba_7', 'bba_6', 'bba_1', 'bba_3', 'bba_2']
 
-    ############################################################################
+    ##########################################################################
     # Merchandise information
     # countries
     info_humans = pd.read_csv('data/info_humans.csv', index_col=0)
@@ -246,12 +242,10 @@ if __name__ == '__main__':
                               'clothing', 'auto parts', 'num_merchs']
 
     ci = ['computers', 'office equipment', 'auto parts', 'sporting goods',
-     'books and music', 'clothing', 'furniture', 'jewelry', 'mobile',
-     'home goods']
+          'books and music', 'clothing', 'furniture', 'jewelry', 'mobile',
+          'home goods']
 
-
-
-    ############################################################################
+    ##########################################################################
     # basic count information
     info_humans = pd.read_csv('data/info_humans.csv', index_col=0)
     info_bots = pd.read_csv('data/info_bots.csv', index_col=0)
