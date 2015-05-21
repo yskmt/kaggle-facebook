@@ -135,7 +135,8 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
         # clf = RandomForestClassifier(n_estimators=n_estimators,
         # class_weight=None, max_features=None)
-        clf = ExtraTreesClassifier(n_estimators=n_estimators, max_features=0.015)
+        clf = ExtraTreesClassifier(n_estimators=n_estimators,
+                                   max_features='auto', criterion='entropy')
 
         # clf = SGDClassifier(loss='log')
         # clf = DecisionTreeClassifier()
@@ -226,7 +227,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
 
     elif model == 'ET':
         clf = ExtraTreesClassifier(n_estimators=n_estimators,
-                                   max_features=0.015,
+                                   max_features=0.015, criterion='entropy',
                                    random_state=0)
         clf.fit(X_train, y_train)
         importances = clf.feature_importances_

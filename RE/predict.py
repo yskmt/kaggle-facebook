@@ -246,9 +246,10 @@ keys_bintervals = ['2', '8', '1', '10', '3', '7', '4', '9', '58', '6', '0',
 keys_counts = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
                'num_urls', 'num_countries', 'num_merchs']
 
-keys_use = keys_counts[:-1] + keys_devices + keys_countries + keys_bbaucs\
-    + keys_merchandises + keys_bintervals[:20]
+# keys_use = keys_counts[:-1] + keys_devices + keys_countries + keys_bbaucs\
+#     + keys_merchandises + keys_bintervals[:20]
 
+keys_use = keys_all
 # keys_use = keys_use[:30]
 
 print "Extracting keys..."
@@ -272,34 +273,34 @@ info_test = info_test[keys_use]
 ############################################################################
 # k-fold Cross Validaton
 ############################################################################
-print "K-fold CV..."
+# print "K-fold CV..."
 
-roc_auc = []
-roc_auc_std = []
-clf_score = []
+# roc_auc = []
+# roc_auc_std = []
+# clf_score = []
 
-num_cv = 5
-for i in range(num_cv):
-    clf, ra, cs, tpr_50 \
-        = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=10000, plot_roc=False)
+# num_cv = 5
+# for i in range(num_cv):
+#     clf, ra, cs, tpr_50 \
+#         = predict_cv(info_humans, info_bots, n_folds=5,
+#                      n_estimators=10000, plot_roc=False)
 
-    print ra.mean(), ra.std()
-    print cs.mean(), cs.std()
-    # print tpr_50.mean(), tpr_50.std()
+#     print ra.mean(), ra.std()
+#     print cs.mean(), cs.std()
+#     # print tpr_50.mean(), tpr_50.std()
 
-    roc_auc.append(ra.mean())
-    roc_auc_std.append(ra.std())
-    clf_score.append(cs.mean())
+#     roc_auc.append(ra.mean())
+#     roc_auc_std.append(ra.std())
+#     clf_score.append(cs.mean())
 
-roc_auc = np.array(roc_auc)
-roc_auc_std = np.array(roc_auc_std)
-clf_score = np.array(clf_score)
+# roc_auc = np.array(roc_auc)
+# roc_auc_std = np.array(roc_auc_std)
+# clf_score = np.array(clf_score)
 
-print ""
-print roc_auc.mean(), roc_auc_std.mean()
-print clf_score.mean(), clf_score.std()
-# print tpr_50
+# print ""
+# print roc_auc.mean(), roc_auc_std.mean()
+# print clf_score.mean(), clf_score.std()
+# # print tpr_50
 
 
 ############################################################################

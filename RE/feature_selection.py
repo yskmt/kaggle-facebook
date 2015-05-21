@@ -80,6 +80,13 @@ if __name__ == '__main__':
         indx_ex, ft_ex = select_k_best_features(
             num_features, info_humans, info_bots)
 
+        # bids interval info
+        biinfo_humans = pd.read_csv('data/bids_intervals_info_humans.csv', index_col=0)
+        biinfo_bots = pd.read_csv('data/bids_intervals_info_bots.csv', index_col=0)
+        biindx_ex, bift_ex = select_k_best_features(
+            num_features, biinfo_humans, biinfo_bots)
+
+        
     ##########################################################################
     # Select features from each category
     # Analyze feature importance using ExtraTree clf
