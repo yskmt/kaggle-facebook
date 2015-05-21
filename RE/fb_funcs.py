@@ -135,7 +135,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
         # clf = RandomForestClassifier(n_estimators=n_estimators,
         # class_weight=None, max_features=None)
-        clf = ExtraTreesClassifier(n_estimators=n_estimators, max_features=0.025)
+        clf = ExtraTreesClassifier(n_estimators=n_estimators, max_features=0.015)
 
         # clf = SGDClassifier(loss='log')
         # clf = DecisionTreeClassifier()
@@ -225,7 +225,8 @@ def fit_and_predict(info_humans, info_bots, info_test,
         return y_pred[:, 1], y_train_pred[:, 1], 0
 
     elif model == 'ET':
-        clf = ExtraTreesClassifier(n_estimators=n_estimators, max_features=0.025,
+        clf = ExtraTreesClassifier(n_estimators=n_estimators,
+                                   max_features=0.015,
                                    random_state=0)
         clf.fit(X_train, y_train)
         importances = clf.feature_importances_
@@ -356,6 +357,33 @@ def append_device(info, dinfo, devices):
     info = pd.concat(devices_appended, axis=1)
 
     return info
+
+
+def append_bids_intervals(info, biinfo, bids_intervals):
+    """
+    Append bids interval data
+
+    info: bidder info
+    biinfo: bidder country info
+    bids_intervals: bids_intervals to be appended
+    """
+
+    bids_intervals_appended = []
+    for key in bids_intervals:
+        if key in list(biinfo.keys()):
+            bids_intervals_appended.append(biinfo[key])
+        else:
+            # just create zero-column
+            bids_intervals_appended.append(
+                pd.DataFrame(np.zeros(len(biinfo)),
+                             index=biinfo.index, columns=[key]))
+
+    bids_intervals_appended.append(info)
+
+    info = pd.concat(bids_intervals_appended, axis=1)
+
+    return info
+
 
 
 def gather_info(bids_data):

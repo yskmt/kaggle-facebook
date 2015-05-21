@@ -62,7 +62,6 @@ n_est = 2000
 0.962807988053 0.00133983098017
 ['au', 'phone46', 'phone143', 'phone739', 'phone55', 'za', 'sg', 'phone728', 'bba_4', 'bba_5', 'th', 'uk', 'num_devices', 'jp', 'bba_2', 'ca', 'ph', 'de', 'phone2287', 'it', 'my', 'bba_6', 'phone996', 'id', 'phone136', 'bba_3', 'phone21', 'phone110', 'bba_8', 'us', 'num_bids', 'bba_7', 'bba_1', 'phone28', 'bba_10', 'bba_9', 'phone63', 'phone640', 'cn', 'num_countries', 'bba_11', 'num_aucs', 'ch', 'fr', 'phone1026', 'num_urls', 'phone195', 'in', 'ar', 'phone150', 'phone469', 'phone219', 'phone144', 'bba_12', 'phone6', 'phone168', 'num_ips', 'phone25', 'phone2330', 'phone58', 'bn', 'bba_15', 'phone65', 'bba_14', 'phone33', 'phone1030', 'bba_13', 'bba_16', 'nl', 'phone22', 'ua', 'br', 'bba_17', 'phone3359', 'ru', 'no', 'phone90', 'bba_19', 'phone224', 'bba_21', 'bba_22', 'phone205', 'bh', 'bba_20', 'bba_18', 'bba_26', 'qa', 'bba_29', 'bba_24', 'bba_28', 'bba_27', 'bba_23', 'bba_25', 'bba_30', 'bba_32', 'bba_33', 'computers', 'lt', 'sa', 'bba_31', 'bba_35', 'mobile', 'phone15', 'sporting goods', 'lv', 'tw', 'jewelry', 'home goods', 'lu', 'kr', 'phone239', 'ec', 'office equipment', 'books and music', 'bf', 'auto parts', 'furniture', 'clothing', 'num_merchs']
 
-
 18
 n_est = 8000
 max_features = 0.025
@@ -70,3 +69,26 @@ max_features = 0.025
 0.955229908369 0.000516114667192
 
 119 features
+
+
+19. 
+
+n_est = 8000
+max_feat = 'auto'
+0.956433766831 0.0136572167668
+0.963114337586 0.000641687548135
+['au', 'phone46', 'phone739', 'phone143', 'phone55', 'za', 'sg', '58', 'phone728', 'ca', 'th', 'num_devices', 'jp', 'id', 'uk', 'it', 'de', 'ph', 'phone2287', '8', 'phone996', '7', 'phone110', '1', 'my', '6', 'phone21', '0', 'bba_4', 'us', '27', 'cn', '3', 'bba_5', '4', 'phone28', '19', '18', '2', 'phone136', '9', '10', 'phone1026', 'num_countries', 'phone640', 'fr', 'phone219', 'bba_3', 'ch', 'bba_6', '11', 'bba_2', 'bba_8', 'bba_9', '12', 'bba_7', 'phone63', 'in', 'phone469', '21', 'num_bids', 'bba_10', 'ar', 'bba_1', '13', 'num_aucs', 'bba_11', '20', 'phone25', 'phone144', '5', 'bn', 'phone6', 'num_urls', 'phone2330', 'nl', 'phone150', 'num_ips', 'phone58', 'phone65', 'phone1030', 'ua', 'bba_12', 'br', 'computers', 'no', 'phone33', 'bba_14', 'phone195', 'phone3359', 'phone22', 'bba_15', 'bba_13', 'phone168', 'ru', 'bba_16', 'qa', 'bh', 'phone205', 'bba_17', 'bba_18', 'phone90', 'phone15', 'lt', 'bba_19', 'phone224', 'bba_27', 'bba_26', 'bba_25', 'bba_28', 'bba_21', 'bba_20', 'sa', 'bba_29', 'tw', 'bba_24', 'mobile', 'bba_23', 'bba_30', 'bba_22', 'bba_32', 'bba_31', 'bba_33', 'bba_35', 'sporting goods', 'jewelry', 'home goods', 'lv', 'lu', 'kr', 'phone239', 'ec', 'books and music', 'office equipment', 'bf', 'auto parts', 'furniture', 'clothing']
+
+20.
+n_est = 8000
+max_feat = 0.025
+0.952225725582 0.0204278890233
+0.956947853692 0.00136960906959
+
+n_feat = 138
+
+20
+n_est = 10,000
+max_feat = 0.015
+0.95054810477 0.019187434505
+0.956040286808 0.000715517744663

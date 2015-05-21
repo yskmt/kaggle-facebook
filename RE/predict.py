@@ -107,6 +107,28 @@ info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
 info_test = append_bba(info_test, bbainfo_test, min_bba)
 
 ############################################################################
+# Bids interval data
+print "Adding bids interval data"
+biinfo_humans = pd.read_csv('data/bids_intervals_info_humans.csv', index_col=0)
+biinfo_bots = pd.read_csv('data/bids_intervals_info_bots.csv', index_col=0)
+biinfo_test = pd.read_csv('data/bids_intervals_info_test.csv', index_col=0)
+
+bids_intervals_appended = biinfo_humans.keys()\
+                                       .union(biinfo_bots.keys())\
+                                       .union(biinfo_test.keys())
+info_humans = append_bids_intervals(info_humans, biinfo_humans,
+                                    bids_intervals_appended)
+info_bots = append_bids_intervals(info_bots, biinfo_bots,
+                                  bids_intervals_appended)
+info_test = append_bids_intervals(info_test, biinfo_test,
+                                  bids_intervals_appended)
+
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
+
+
+############################################################################
 # Outlier dropping
 ############################################################################
 print "Removing outliers..."
@@ -187,35 +209,45 @@ info_test.fillna(0, inplace=True)
 # keys_use = list(set(keys_use1).union(keys_use2))
 
 
+keys_devices = ['phone136', 'phone640', 'phone739', 'phone150', 'phone15',
+                'phone33', 'phone1030', 'phone996', 'phone58', 'phone55',
+                'phone2287', 'phone205', 'phone224', 'phone90', 'phone3359',
+                'phone143', 'phone168', 'phone144', 'phone728', 'phone6',
+                'phone2330', 'phone28', 'phone25', 'phone1026', 'phone21',
+                'phone239', 'phone22', 'phone219', 'phone195', 'phone46', 'phone63',
+                'phone65', 'phone110', 'phone469']
 
-devi = ['phone136', 'phone640', 'phone739', 'phone150', 'phone15',
-        'phone33', 'phone1030', 'phone996', 'phone58', 'phone55',
-        'phone2287', 'phone205', 'phone224', 'phone90', 'phone3359',
-        'phone143', 'phone168', 'phone144', 'phone728', 'phone6',
-        'phone2330', 'phone28', 'phone25', 'phone1026', 'phone21',
-        'phone239', 'phone22', 'phone219', 'phone195', 'phone46', 'phone63',
-        'phone65', 'phone110', 'phone469']
+keys_countries = ['ch', 'cn', 'ca', 'za', 'ec', 'ar', 'au', 'in', 'my', 'ru',
+                  'nl', 'no', 'tw', 'id', 'lv', 'lt', 'lu', 'th', 'fr', 'jp', 'bn',
+                  'de', 'bh', 'it', 'br', 'ph', 'sg', 'us', 'qa', 'kr', 'uk', 'bf',
+                  'sa', 'ua']
 
-counti = ['ch', 'cn', 'ca', 'za', 'ec', 'ar', 'au', 'in', 'my', 'ru',
-          'nl', 'no', 'tw', 'id', 'lv', 'lt', 'lu', 'th', 'fr', 'jp', 'bn',
-          'de', 'bh', 'it', 'br', 'ph', 'sg', 'us', 'qa', 'kr', 'uk', 'bf',
-          'sa', 'ua']
+keys_bbaucs = ['bba_35', 'bba_33', 'bba_32', 'bba_31', 'bba_30', 'bba_19',
+               'bba_18', 'bba_15', 'bba_14', 'bba_17', 'bba_16', 'bba_11', 'bba_10',
+               'bba_13', 'bba_12', 'bba_28', 'bba_29', 'bba_20', 'bba_21', 'bba_22',
+               'bba_23', 'bba_24', 'bba_25', 'bba_26', 'bba_27', 'bba_9', 'bba_8',
+               'bba_5', 'bba_4', 'bba_7', 'bba_6', 'bba_1', 'bba_3', 'bba_2']
 
-bbai = ['bba_35', 'bba_33', 'bba_32', 'bba_31', 'bba_30', 'bba_19',
-        'bba_18', 'bba_15', 'bba_14', 'bba_17', 'bba_16', 'bba_11', 'bba_10',
-        'bba_13', 'bba_12', 'bba_28', 'bba_29', 'bba_20', 'bba_21', 'bba_22',
-        'bba_23', 'bba_24', 'bba_25', 'bba_26', 'bba_27', 'bba_9', 'bba_8',
-        'bba_5', 'bba_4', 'bba_7', 'bba_6', 'bba_1', 'bba_3', 'bba_2']
+keys_merchandises = ['computers', 'office equipment', 'auto parts', 'sporting goods',
+                     'books and music', 'clothing', 'furniture', 'jewelry', 'mobile',
+                     'home goods']
 
-ci = ['computers', 'office equipment', 'auto parts', 'sporting goods',
-      'books and music', 'clothing', 'furniture', 'jewelry', 'mobile',
-      'home goods']
+keys_bintervals = ['2', '8', '1', '10', '3', '7', '4', '9', '58', '6', '0',
+                   '11', '12', '20', '5', '18', '19', '13', '27', '21', '15',
+                   '22', '16', '17', '26', '46', '25', '64', '30', '14', '52',
+                   '23', '61', '29', '36', '32', '34', '50', '24', '38', '67',
+                   '39', '54', '31', '35', '53', '57', '62', '37', '60', '33',
+                   '43', '28', '81', '55', '70', '76', '47', '72', '40', '49',
+                   '79', '93', '66', '78', '56', '82', '86', '74', '45', '41',
+                   '48', '59', '87', '68', '92', '85', '73', '44', '91', '94',
+                   '42', '97', '63', '77', '71', '98', '84', '90', '88', '80',
+                   '83', '75', '99', '65', '96', '51', '89', '95', '69']
 
-count_importance = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
-                    'num_urls', 'num_countries', 'num_merchs']
+keys_counts = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
+               'num_urls', 'num_countries', 'num_merchs']
 
-keys_use = count_importance + ci + bbai + counti + devi
-
+keys_use = keys_counts[:-1] + keys_devices + keys_countries + keys_bbaucs\
+    + keys_merchandises + keys_bintervals[:20]
 
 # keys_use = keys_use[:30]
 
@@ -250,7 +282,7 @@ num_cv = 5
 for i in range(num_cv):
     clf, ra, cs, tpr_50 \
         = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=8000, plot_roc=False)
+                     n_estimators=10000, plot_roc=False)
 
     print ra.mean(), ra.std()
     print cs.mean(), cs.std()
@@ -276,7 +308,7 @@ print clf_score.mean(), clf_score.std()
 
 y_test_proba, y_train_proba, _, feature_importance\
     = fit_and_predict(info_humans, info_bots, info_test, model='ET',
-                      n_estimators=8000, p_use=None, plot_importance=True)
+                      n_estimators=10000, p_use=None, plot_importance=True)
 
 ############################################################################
 # submission file generation
