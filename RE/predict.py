@@ -19,7 +19,7 @@ from sklearn.metrics import roc_curve, auc
 from fb_funcs import (predict_usample, append_merchandise, predict_cv,
                       fit_and_predict,
                       append_countries, keys_sig, keys_na,
-                      append_bba, append_device)
+                      append_bba, append_device, append_bids_intervals)
 from feature_selection import select_k_best_features
 
 
@@ -155,7 +155,6 @@ if 'merchandise' in keys_all:
 else:
     keys_use = keys_all
 
-
 info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
@@ -243,19 +242,23 @@ keys_bintervals = ['2', '8', '1', '10', '3', '7', '4', '9', '58', '6', '0',
                    '42', '97', '63', '77', '71', '98', '84', '90', '88', '80',
                    '83', '75', '99', '65', '96', '51', '89', '95', '69']
 
+keys_bintervals = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
 keys_counts = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
                'num_urls', 'num_countries', 'num_merchs']
 
-# keys_use = keys_counts[:-1] + keys_devices + keys_countries + keys_bbaucs\
-#     + keys_merchandises + keys_bintervals[:20]
+keys_use = keys_counts[:-1] + keys_devices + keys_countries + keys_bbaucs\
+           + keys_merchandises + keys_bintervals
 
 keys_use = keys_all
 # keys_use = keys_use[:30]
+
 
 print "Extracting keys..."
 info_humans = info_humans[keys_use]
 info_bots = info_bots[keys_use]
 info_test = info_test[keys_use]
+
 
 
 ############################################################################

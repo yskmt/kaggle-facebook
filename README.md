@@ -52,6 +52,7 @@
     * Chi2 test
     * Get the correlation among features and remove the one with high
       correlation.
+* Bagging of the extratree is not the way to go...
 
 ## Outliers
 
