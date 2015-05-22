@@ -84,3 +84,66 @@ bids_intervals_humans.to_csv(
 bids_intervals_test = gather_bid_interval_counts(info_test, bids_test)
 bids_intervals_test.to_csv(
     'data/bids_intervals_test_info.csv', index_label='bidder_id')
+
+
+##########################################################################
+# Gather the auction count for the same time-frame
+##########################################################################
+
+def gather_sametime_bids_counts(info, bids_by_bidders):
+    """Gather the number of bids that occurred at the same time by the
+    same bidder for the :
+    1. same auction
+    2. different auction
+
+    """
+    
+    num_bidders = len(info)
+    num_bids_sametime = np.zeros((num_bidders, 2), dtype=int)
+    nb = 0
+    for bidder in info.index:
+        if nb%100==0:
+            print '%d/%d' %(nb, num_bidders)
+
+        bids = bids_by_bidders[bids_by_bidders['bidder_id']==bidder]
+        bids_time = bids['time']
+        bids_time_diff = np.diff(bids_time)
+
+        zero_int = np.where(bids_time_diff==0)[0]
+
+        bids_sametime_sameauc = 0
+        bids_sametime_diffauc = 0
+        for i in range(len(zero_int)):
+            # print bids.iloc[zero_int[i]]
+            # print bids.iloc[zero_int[i]+1]
+
+            if bids.iloc[zero_int[i]]['auction'] == bids.iloc[zero_int[i]+1]['auction']:
+                bids_sametime_sameauc += 1
+            else:
+                bids_sametime_diffauc += 1
+
+        num_bids_sametime[nb, 0] = bids_sametime_sameauc
+        num_bids_sametime[nb, 1] = bids_sametime_diffauc
+
+        nb += 1
+
+    num_bids_sametime \
+        = pd.DataFrame(num_bids_sametime, index=info.index)
+    num_bids_sametime.columns \
+        = ['num_bids_sametime_sameauc', 'num_bids_sametime_diffauc']
+
+    return num_bids_sametime
+
+
+# humans
+num_bids_sametime_humans = gather_sametime_bids_counts(info_humans, bids_humans)
+num_bids_sametime_humans.to_csv(
+    'data/num_bids_sametime_info_humans.csv', index_label='bidder_id')
+# bots
+num_bids_sametime_bots = gather_sametime_bids_counts(info_bots, bids_bots)
+num_bids_sametime_bots.to_csv(
+    'data/num_bids_sametime_info_bots.csv', index_label='bidder_id')
+# test
+num_bids_sametime_test = gather_sametime_bids_counts(info_test, bids_test)
+num_bids_sametime_test.to_csv(
+    'data/num_bids_sametime_info_test.csv', index_label='bidder_id')
