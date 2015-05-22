@@ -127,6 +127,22 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
+############################################################################
+# Numer of same-time-bids data
+print "Adding same-time bids data"
+nbsinfo_humans = pd.read_csv('data/num_bids_sametime_info_humans.csv', index_col=0)
+nbsinfo_bots = pd.read_csv('data/num_bids_sametime_info_bots.csv', index_col=0)
+nbsinfo_test = pd.read_csv('data/num_bids_sametime_info_test.csv', index_col=0)
+
+kys_nbs = nbsinfo.keys()
+info_humans = append_info(info_humans, nbsinfo_humans, keys_nbs)
+info_bots = append_info(info_bots, nbsinfo_bots, keys_nbs)
+info_test = append_info(info_test, nbsinfo_test, keys_nbs)
+
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
+
 
 ############################################################################
 # Outlier dropping
@@ -276,34 +292,34 @@ info_test = info_test[keys_use]
 ############################################################################
 # k-fold Cross Validaton
 ############################################################################
-# print "K-fold CV..."
+print "K-fold CV..."
 
-# roc_auc = []
-# roc_auc_std = []
-# clf_score = []
+roc_auc = []
+roc_auc_std = []
+clf_score = []
 
-# num_cv = 5
-# for i in range(num_cv):
-#     clf, ra, cs, tpr_50 \
-#         = predict_cv(info_humans, info_bots, n_folds=5,
-#                      n_estimators=10000, plot_roc=False)
+num_cv = 5
+for i in range(num_cv):
+    clf, ra, cs, tpr_50 \
+        = predict_cv(info_humans, info_bots, n_folds=5,
+                     n_estimators=10000, plot_roc=False)
 
-#     print ra.mean(), ra.std()
-#     print cs.mean(), cs.std()
-#     # print tpr_50.mean(), tpr_50.std()
+    print ra.mean(), ra.std()
+    print cs.mean(), cs.std()
+    # print tpr_50.mean(), tpr_50.std()
 
-#     roc_auc.append(ra.mean())
-#     roc_auc_std.append(ra.std())
-#     clf_score.append(cs.mean())
+    roc_auc.append(ra.mean())
+    roc_auc_std.append(ra.std())
+    clf_score.append(cs.mean())
 
-# roc_auc = np.array(roc_auc)
-# roc_auc_std = np.array(roc_auc_std)
-# clf_score = np.array(clf_score)
+roc_auc = np.array(roc_auc)
+roc_auc_std = np.array(roc_auc_std)
+clf_score = np.array(clf_score)
 
-# print ""
-# print roc_auc.mean(), roc_auc_std.mean()
-# print clf_score.mean(), clf_score.std()
-# # print tpr_50
+print ""
+print roc_auc.mean(), roc_auc_std.mean()
+print clf_score.mean(), clf_score.std()
+# print tpr_50
 
 
 ############################################################################

@@ -227,7 +227,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
 
     elif model == 'ET':
         clf = ExtraTreesClassifier(n_estimators=n_estimators,
-                                   max_features=0.015, criterion='entropy',
+                                   max_features=0.015, criterion='gini',
                                    random_state=0)
         clf.fit(X_train, y_train)
         importances = clf.feature_importances_
@@ -385,7 +385,29 @@ def append_bids_intervals(info, biinfo, bids_intervals):
 
     return info
 
+def append_info(info, info_new, keys_appended):
+    """
+    Append info
+    """
 
+    info_appended = []
+    for key in keys_info_appended:
+        if key in list(info_new.keys()):
+            info_appended.append(info_new[key])
+        else:
+            # just create zero-column
+            info_appended.append(
+                pd.DataFrame(np.zeros(len(info_new)),
+                             index=info_new.index, columns=[key]))
+
+    info_appended.append(info)
+
+    info = pd.concat(info_appended, axis=1)
+
+    return info
+
+
+    
 
 def gather_info(bids_data):
     """
