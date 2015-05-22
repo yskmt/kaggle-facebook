@@ -105,3 +105,31 @@ extratree: n_est = 10,000 max_feat = 0.015
 baggingclassifier: n_est = 10, max_feat = 0.75
 0.949248376705 0.0205232286282
 0.958061522021 0.00142994166689
+
+
+
+24.
+all features except bid_streaks
+0.944137121986 0.0168897286188
+0.958366590369 0.00113578948111
+
+141 features
+0.954206853482 0.0152990922129
+0.962102956678 0.00171932441174
+
+53 features, n_est=10000, max_feat=auto
+0.957640781825 0.0152186955176
+0.963115365626 0.000713891469549
+['au', 'bba_4', 'num_bids', 'streak_4', 'int_1', 'bba_3', 'bba_5', 'bba_2', 'streak_3', 'int_2', 'bba_1', 'int_4', 'num_bids_sametime_diffauc', 'int_3', 'int_0', 'streak_1', 'streak_2', 'phone55', 'streak_0', 'num_urls', 'num_ips', 'num_devices', 'my', 'za', 'ca', 'num_aucs', 'phone739', 'phone150', 'num_countries', 'phone996', 'phone33', 'in', 'phone640', 'phone58', 'phone136', 'cn', 'ru', 'phone15', 'ar', 'num_bids_sametime_sameauc', 'ch', 'phone1030', 'ec', 'mobile', 'sporting goods', 'jewelry', 'computers', 'home goods', 'office equipment', 'books and music', 'auto parts', 'furniture', 'clothing']
+
+0.955274285186 0.0162474707099
+0.962406241415 0.000821079043834
+class_weight=0.06
+['au', 'phone55', 'phone739', 'za', 'ca', 'my', 'streak_4', 'bba_4', 'phone996', 'num_devices', 'streak_3', 'bba_5', 'streak_1', 'bba_3', 'bba_1', 'bba_2', 'num_bids', 'phone640', 'int_1', 'streak_2', 'num_bids_sametime_diffauc', 'cn', 'streak_0', 'int_4', 'num_countries', 'int_2', 'int_3', 'int_0', 'in', 'num_urls', 'num_aucs', 'phone136', 'ar', 'num_ips', 'ch', 'phone150', 'ru', 'phone58', 'phone33', 'phone15', 'phone1030', 'num_bids_sametime_sameauc', 'mobile', 'computers', 'sporting goods', 'jewelry', 'home goods', 'ec', 'books and music', 'office equipment', 'auto parts', 'furniture', 'clothing']
+
+
+0.956120929511 0.0173861348224
+0.964122910706 0.000320234312595
+
+25.
+

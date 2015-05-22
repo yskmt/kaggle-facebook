@@ -7,6 +7,9 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.ensemble import AdaBoostClassifier
+
+from sklearn.neighbors import KNeighborsClassifier
 
 from sklearn.metrics import roc_curve, auc
 from sklearn import cross_validation
@@ -135,17 +138,32 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
         # clf = RandomForestClassifier(n_estimators=n_estimators,
         # class_weight=None, max_features=None)
-        clf = ExtraTreesClassifier(n_estimators=n_estimators,
-                                   max_features='auto', criterion='entropy')
+        # clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
+        #                            max_features=0.015, criterion='gini')
 
+        clf = AdaBoostClassifier(n_estimators=n_estimators, learning_rate=0.1)
+
+        # XGBoost
+        dtrain = xgb.DMatrix(X_train, label=y_train)
+        params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10,
+                  "colsample_bytree": 0.5}
+        num_rounds = n_estimators
+        evallist = [(dtrain, 'train')]
+        bst = xgb.train(params, dtrain, num_rounds, evallist)
+        dtest = xgb.DMatrix(X_test)
+        y_test_proba = bst.predict(dtest)
+        
+        # clf = KNeighborsClassifier()
+        
         # clf = SGDClassifier(loss='log')
         # clf = DecisionTreeClassifier()
 
-        clf.fit(X_train, y_train)
-        y_test_proba = clf.predict_proba(X_test)
+        # clf.fit(X_train, y_train)
+        # y_test_proba = clf.predict_proba(X_test)
         # y_test_pred = clf.predict(X_test)
 
-        fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
+        # fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
+        fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
         roc_auc[n_cv] = auc(fpr, tpr)
 
         if plot_roc:
@@ -156,12 +174,15 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
             # plt.show()
 
-        clf_score[n_cv] = clf.score(X_test, y_test)
+        # clf_score[n_cv] = clf.score(X_test, y_test)
 
         # true positive rate at 0.5 threshold
-        tpr_50[n_cv] = (
-            tpr[sum(thresholds > 0.5)] + tpr[sum(thresholds > 0.5) - 1]) / 2.0
+        # tpr_50[n_cv] = (
+            # tpr[sum(thresholds > 0.5)] + tpr[sum(thresholds > 0.5) - 1]) / 2.0
 
+        clf_score= 0.0
+        tpr_50 = 0.0
+            
         n_cv += 1
 
     if plot_roc:
@@ -218,15 +239,21 @@ def fit_and_predict(info_humans, info_bots, info_test,
 
     if model == 'RF':
         # randomforest!
-        clf = RandomForestClassifier(n_estimators=n_estimators,
-                                     class_weight='auto', verbose=1)
+        clf = RandomForestClassifier(n_estimators=n_estimators, verbose=1)
         clf.fit(X_train, y_train)
         y_pred = clf.predict_proba(X_test)
         y_train_pred = clf.predict_proba(X_train)
         return y_pred[:, 1], y_train_pred[:, 1], 0
 
+    elif model == 'KN':
+        clf = KNeighborsClassifier()
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict_proba(X_test)
+        y_train_pred = clf.predict_proba(X_train)
+        return y_pred[:, 1], y_train_pred[:, 1], 0, 0
+        
     elif model == 'ET':
-        clf = ExtraTreesClassifier(n_estimators=n_estimators,
+        clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
                                    max_features=0.015, criterion='gini',
                                    random_state=0)
         clf.fit(X_train, y_train)
@@ -391,7 +418,7 @@ def append_info(info, info_new, keys_appended):
     """
 
     info_appended = []
-    for key in keys_info_appended:
+    for key in keys_appended:
         if key in list(info_new.keys()):
             info_appended.append(info_new[key])
         else:
