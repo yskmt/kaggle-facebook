@@ -3,26 +3,20 @@ time_analysis.py
 Facebook Recruiting IV: Human or Robot?
 author: Yusuke Sakamoto
 
-"""
+Analyze the time-dependent behaviors of the bidders.
 
+
+"""
+from sys import argv
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-bids_bots = pd.read_csv('data/bids_bots.csv')
-info_bots = pd.read_csv('data/info_bots.csv', index_col=0)
 
-bids_humans = pd.read_csv('data/bids_humans.csv')
-info_humans = pd.read_csv('data/info_humans.csv', index_col=0)
-
-bids_test = pd.read_csv('data/bids_test.csv')
-info_test = pd.read_csv('data/info_test.csv', index_col=0)
-
-
-min_interval = 52631578.95
-max_interval = 0.03e12
-eps = 100  # some space for int division to work
-
+##########################################################################
+# Gather the bid interval counts.
+# Use the multiple of the minimum interval (==52631578.95)
+##########################################################################
 
 def plot_intervals_hist(bids, info, bidder_id, plot=False):
 
@@ -69,24 +63,6 @@ def gather_bid_interval_counts(info, bids):
 
 
 ##########################################################################
-# Gather the bid interval counts.
-# Use the multiple of the minimum interval (==52631578.95)
-##########################################################################
-# bots
-bids_intervals_bots = gather_bid_interval_counts(info_bots, bids_bots)
-bids_intervals_bots.to_csv(
-    'data/bids_intervals_bots_info.csv', index_label='bidder_id')
-# humans
-bids_intervals_humans = gather_bid_interval_counts(info_humans, bids_humans)
-bids_intervals_humans.to_csv(
-    'data/bids_intervals_humans_info.csv', index_label='bidder_id')
-# test
-bids_intervals_test = gather_bid_interval_counts(info_test, bids_test)
-bids_intervals_test.to_csv(
-    'data/bids_intervals_test_info.csv', index_label='bidder_id')
-
-
-##########################################################################
 # Gather the auction count for the same time-frame
 ##########################################################################
 
@@ -97,19 +73,19 @@ def gather_sametime_bids_counts(info, bids_by_bidders):
     2. different auction
 
     """
-    
+
     num_bidders = len(info)
     num_bids_sametime = np.zeros((num_bidders, 2), dtype=int)
     nb = 0
     for bidder in info.index:
-        if nb%100==0:
-            print '%d/%d' %(nb, num_bidders)
+        if nb % 100 == 0:
+            print '%d/%d' % (nb, num_bidders)
 
-        bids = bids_by_bidders[bids_by_bidders['bidder_id']==bidder]
+        bids = bids_by_bidders[bids_by_bidders['bidder_id'] == bidder]
         bids_time = bids['time']
         bids_time_diff = np.diff(bids_time)
 
-        zero_int = np.where(bids_time_diff==0)[0]
+        zero_int = np.where(bids_time_diff == 0)[0]
 
         bids_sametime_sameauc = 0
         bids_sametime_diffauc = 0
@@ -117,7 +93,7 @@ def gather_sametime_bids_counts(info, bids_by_bidders):
             # print bids.iloc[zero_int[i]]
             # print bids.iloc[zero_int[i]+1]
 
-            if bids.iloc[zero_int[i]]['auction'] == bids.iloc[zero_int[i]+1]['auction']:
+            if bids.iloc[zero_int[i]]['auction'] == bids.iloc[zero_int[i] + 1]['auction']:
                 bids_sametime_sameauc += 1
             else:
                 bids_sametime_diffauc += 1
@@ -135,15 +111,112 @@ def gather_sametime_bids_counts(info, bids_by_bidders):
     return num_bids_sametime
 
 
-# humans
-num_bids_sametime_humans = gather_sametime_bids_counts(info_humans, bids_humans)
-num_bids_sametime_humans.to_csv(
-    'data/num_bids_sametime_info_humans.csv', index_label='bidder_id')
-# bots
-num_bids_sametime_bots = gather_sametime_bids_counts(info_bots, bids_bots)
-num_bids_sametime_bots.to_csv(
-    'data/num_bids_sametime_info_bots.csv', index_label='bidder_id')
-# test
-num_bids_sametime_test = gather_sametime_bids_counts(info_test, bids_test)
-num_bids_sametime_test.to_csv(
-    'data/num_bids_sametime_info_test.csv', index_label='bidder_id')
+##########################################################################
+# Gather the bid streaks
+##########################################################################
+
+
+def gather_bid_streaks(info, bids, bid_timeframe, max_count=20):
+    """
+    Gather the bid interval counts.
+    Use the multiple of the minimum interval (==52631578.95)
+    """
+
+    bid_streaks = []
+    for i in range(len(info)):
+        if i % 100 == 0:
+            print '%d/%d' % (i, len(info))
+
+        bi = plot_intervals_hist(bids, info, info.index[i])
+
+        # normalize by min_interval
+        bi = (np.array(bi) + eps) / min_interval
+
+        st = 0
+        streaks = []
+        for j in range(len(bi)):
+            if bi[j] < bid_timeframe:
+                st += 1
+            elif st > 0:
+                streaks.append(st)
+                st = 0
+            else:
+                st = 0
+
+        streaks = pd.DataFrame(
+            np.array(sorted(streaks, reverse=True)[:max_count], dtype=int)\
+            .reshape(1, min(len(streaks), max_count)),
+            index=[info.index[i]], dtype=int)
+
+        bid_streaks.append(streaks)
+
+    bid_streaks = pd.concat(bid_streaks, axis=0)
+    bid_streaks.columns = map(lambda x: 'streak_' + str(x), range(max_count))
+    bid_streaks.fillna(0, inplace=True)
+    
+    return bid_streaks
+
+
+#############################################################################
+if __name__ == "__main__":
+    bids_bots = pd.read_csv('data/bids_bots.csv')
+    info_bots = pd.read_csv('data/info_bots.csv', index_col=0)
+
+    bids_humans = pd.read_csv('data/bids_humans.csv')
+    info_humans = pd.read_csv('data/info_humans.csv', index_col=0)
+
+    bids_test = pd.read_csv('data/bids_test.csv')
+    info_test = pd.read_csv('data/info_test.csv', index_col=0)
+
+    min_interval = 52631578.95
+    max_interval = 0.03e12
+    eps = 100  # some space for int division to work
+
+    if 'interval-counts' in argv[1]:
+        # bots
+        bids_intervals_bots = gather_bid_interval_counts(info_bots, bids_bots)
+        bids_intervals_bots.to_csv(
+            'data/bids_intervals_bots_info.csv', index_label='bidder_id')
+        # humans
+        bids_intervals_humans = gather_bid_interval_counts(
+            info_humans, bids_humans)
+        bids_intervals_humans.to_csv(
+            'data/bids_intervals_humans_info.csv', index_label='bidder_id')
+        # test
+        bids_intervals_test = gather_bid_interval_counts(info_test, bids_test)
+        bids_intervals_test.to_csv(
+            'data/bids_intervals_test_info.csv', index_label='bidder_id')
+
+    elif 'same-time-bids' in argv[1]:
+        # humans
+        num_bids_sametime_humans = gather_sametime_bids_counts(
+            info_humans, bids_humans)
+        num_bids_sametime_humans.to_csv(
+            'data/num_bids_sametime_info_humans.csv', index_label='bidder_id')
+        # bots
+        num_bids_sametime_bots = gather_sametime_bids_counts(
+            info_bots, bids_bots)
+        num_bids_sametime_bots.to_csv(
+            'data/num_bids_sametime_info_bots.csv', index_label='bidder_id')
+        # test
+        num_bids_sametime_test = gather_sametime_bids_counts(
+            info_test, bids_test)
+        num_bids_sametime_test.to_csv(
+            'data/num_bids_sametime_info_test.csv', index_label='bidder_id')
+
+    elif 'bid-streaks' in argv[1]:
+        # bots
+        bid_streaks_bots = gather_bid_streaks(
+            info_bots, bids_bots, bid_timeframe=10.1)
+        bid_streaks_bots.to_csv(
+            'data/bid_streaks_info_bots.csv', index_label='bidder_id')
+        # humans
+        bid_streaks_humans = gather_bid_streaks(
+            info_humans, bids_humans, bid_timeframe=10.1)
+        bid_streaks_humans.to_csv(
+            'data/bid_streaks_info_humans.csv', index_label='bidder_id')
+        # test
+        bid_streaks_test = gather_bid_streaks(
+            info_test, bids_test, bid_timeframe=10.1)
+        bid_streaks_test.to_csv(
+            'data/bid_streaks_info_test.csv', index_label='bidder_id')
