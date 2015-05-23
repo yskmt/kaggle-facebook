@@ -7,6 +7,9 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.ensemble import AdaBoostClassifier
+
+from sklearn.neighbors import KNeighborsClassifier
 
 from sklearn.metrics import roc_curve, auc
 from sklearn import cross_validation
@@ -133,19 +136,30 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        # clf = RandomForestClassifier(n_estimators=n_estimators,
-        # class_weight=None, max_features=None)
-        clf = ExtraTreesClassifier(n_estimators=n_estimators,
-                                   max_features='auto', criterion='entropy')
+        clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
+                                   max_features=0.015, criterion='gini')
 
+        # XGBoost
+        dtrain = xgb.DMatrix(X_train, label=y_train)
+        params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10,
+                  "colsample_bytree": 0.015, "subsample": 0.8}
+        num_rounds = n_estimators
+        evallist = [(dtrain, 'train')]
+        bst = xgb.train(params, dtrain, num_rounds, evallist)
+        dtest = xgb.DMatrix(X_test)
+        y_test_proba = bst.predict(dtest)
+        fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
+        
+        # clf = AdaBoostClassifier(n_estimators=n_estimators, learning_rate=0.1)
+        # clf = KNeighborsClassifier()
         # clf = SGDClassifier(loss='log')
         # clf = DecisionTreeClassifier()
 
-        clf.fit(X_train, y_train)
-        y_test_proba = clf.predict_proba(X_test)
+        # clf.fit(X_train, y_train)
+        # y_test_proba = clf.predict_proba(X_test)
         # y_test_pred = clf.predict(X_test)
 
-        fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
+        # fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
         roc_auc[n_cv] = auc(fpr, tpr)
 
         if plot_roc:
@@ -156,12 +170,17 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
             # plt.show()
 
-        clf_score[n_cv] = clf.score(X_test, y_test)
+        # clf_score[n_cv] = clf.score(X_test, y_test)
+        clf_score[n_cv] = 0.0
 
         # true positive rate at 0.5 threshold
-        tpr_50[n_cv] = (
-            tpr[sum(thresholds > 0.5)] + tpr[sum(thresholds > 0.5) - 1]) / 2.0
+        # tpr_50[n_cv] = (
+            # tpr[sum(thresholds > 0.5)] + tpr[sum(thresholds > 0.5) - 1]) / 2.0
 
+        # clf_score[n_cv] = np.linalg.norm(y_test-y_test_proba)
+        # clf_score= 0.0
+        tpr_50 = 0.0
+            
         n_cv += 1
 
     if plot_roc:
@@ -218,15 +237,21 @@ def fit_and_predict(info_humans, info_bots, info_test,
 
     if model == 'RF':
         # randomforest!
-        clf = RandomForestClassifier(n_estimators=n_estimators,
-                                     class_weight='auto', verbose=1)
+        clf = RandomForestClassifier(n_estimators=n_estimators, verbose=1)
         clf.fit(X_train, y_train)
         y_pred = clf.predict_proba(X_test)
         y_train_pred = clf.predict_proba(X_train)
         return y_pred[:, 1], y_train_pred[:, 1], 0
 
+    elif model == 'KN':
+        clf = KNeighborsClassifier()
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict_proba(X_test)
+        y_train_pred = clf.predict_proba(X_train)
+        return y_pred[:, 1], y_train_pred[:, 1], 0, 0
+        
     elif model == 'ET':
-        clf = ExtraTreesClassifier(n_estimators=n_estimators,
+        clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
                                    max_features=0.015, criterion='gini',
                                    random_state=0)
         clf.fit(X_train, y_train)
@@ -243,7 +268,6 @@ def fit_and_predict(info_humans, info_bots, info_test,
             print("%d. feature %d: %s = (%f)"
                   % (f, indices[f], features[indices[f]], importances[indices[f]]))
 
-        # print list((features[indices])[:22])
         print list((features[indices]))[:40]
 
         # Plot the feature importances of the forest
@@ -260,24 +284,27 @@ def fit_and_predict(info_humans, info_bots, info_test,
         y_train_pred = clf.predict_proba(X_train)
 
         return y_pred[:, 1], y_train_pred[:, 1], 0, list((features[indices]))
-    elif model == "XGB":
+    elif "XGB" in model:
         # xgboost!
-        dtrain = xgb.DMatrix(X_train, label=y_train)
-        params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10}
+        params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10,
+                  "colsample_bytree": 0.015, "subsample": 0.8}
         num_rounds = n_estimators
+        dtrain = xgb.DMatrix(X_train, label=y_train)
 
-        evallist = [(dtrain, 'train')]
-        bst = xgb.train(params, dtrain, num_rounds, evallist)
-        dtest = xgb.DMatrix(X_test)
-        y_pred = bst.predict(dtest)
-        y_train_pred = bst.predict(dtrain)
+        if "CV" in model:
+            cv=5
+            cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
+                               metrics={'rmse', 'error', 'auc'}, seed=0)
+            return 0, 0, cv_result, 0
+        else:
+            evallist = [(dtrain, 'train')]
+            bst = xgb.train(params, dtrain, num_rounds, evallist)
+            dtest = xgb.DMatrix(X_test)
+            y_pred = bst.predict(dtest)
+            y_train_pred = bst.predict(dtrain)
 
-        return y_pred, y_train_pred, y_train, 0
+            return y_pred, y_train_pred, y_train, 0
 
-    elif model == "XGB_CV":
-        cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
-                           metrics={'rmse', 'error', 'auc'}, seed=0)
-        return 0, 0, cv_result
 
 def append_merchandise(info, drop=True):
     """
@@ -391,7 +418,7 @@ def append_info(info, info_new, keys_appended):
     """
 
     info_appended = []
-    for key in keys_info_appended:
+    for key in keys_appended:
         if key in list(info_new.keys()):
             info_appended.append(info_new[key])
         else:
