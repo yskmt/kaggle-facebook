@@ -33,71 +33,8 @@ keys_sig = ['ar', 'au', 'bd', 'dj', 'ga', 'gq', 'id', 'mc', 'ml',
 keys_na = ['an', 'aw', 'bi', 'cf', 'er', 'gi', 'gn', 'gp', 'mh', 'nc',
            'sb', 'tc', 'vi', 'ws']
 
-
-def predict_usample(num_humans, num_humans_use, num_bots_use,
-                    info_humans, info_bots, p_valid=0.2, plot_roc=False):
-    """
-    prediction by undersampling
-
-    p_valid: validation set fraction
-    """
-
-    index_h = np.random.choice(num_humans, num_humans_use, replace=False)
-    info_humans_use = info_humans.iloc[index_h, :]
-
-    # combine humans and bots data to create given data
-    info_given = pd.concat([info_humans_use, info_bots], axis=0)
-    labels_train = np.hstack((np.zeros(num_humans_use), np.ones(num_bots_use)))
-
-    # split into training and validation sets
-    num_given = len(info_given)
-    num_valid = int(num_given * p_valid)
-    num_train = num_given - num_valid
-
-    index_vt = np.random.choice(num_given, num_given, replace=False)
-
-    info_valid = info_given.iloc[index_vt[:num_valid], :]
-    info_train = info_given.iloc[index_vt[num_valid:], :]
-
-    X_valid = info_valid.as_matrix()
-    X_train = info_train.as_matrix()
-
-    y_valid = labels_train[index_vt[:num_valid]]
-    y_train = labels_train[index_vt[num_valid:]]
-
-    # randomforest!
-    clf = RandomForestClassifier(n_estimators=1000)
-    clf.fit(X_train, y_train)
-    y_valid_proba = clf.predict_proba(X_valid)
-    y_valid_pred = clf.predict(X_valid)
-
-    fpr, tpr, thresholds = roc_curve(y_valid, y_valid_proba[:, 1])
-    roc_auc = auc(fpr, tpr)
-
-    if plot_roc:
-        # Plot ROC curve
-        plt.clf()
-        plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
-        plt.plot([0, 1], [0, 1], 'k--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.0])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('Receiver operating characteristic example')
-        plt.legend(loc="lower right")
-        plt.show()
-
-    clf_score = clf.score(X_valid, y_valid)
-
-    # true positive rate at 0.5 threshold
-    tpr_50 = (
-        tpr[sum(thresholds > 0.5)] + tpr[sum(thresholds > 0.5) - 1]) / 2.0
-
-    return clf, roc_auc, clf_score, tpr_50
-
-
 def predict_cv(info_humans, info_bots, plot_roc=False,
-               n_folds=5, n_estimators=1000):
+               n_folds=5, n_estimators=1000, model="ET"):
     """
     prediction by undersampling
 
@@ -128,7 +65,6 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
     # cv scores
     roc_auc = np.zeros(n_folds)
     clf_score = np.zeros(n_folds)
-    tpr_50 = np.zeros(n_folds)
 
     n_cv = 0
     for train_index, test_index in kf:
@@ -136,62 +72,53 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        # clf = SGDClassifier(loss='log')
-        # clf = DecisionTreeClassifier()
-        # clf = KNeighborsClassifier()
-        # clf = RandomForestClassifier(n_estimators=n_estimators,
-        # class_weight=None, max_features=None)
-        # clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
-        #                            max_features=0.015, criterion='gini')
-        # clf = AdaBoostClassifier(n_estimators=n_estimators, learning_rate=0.1)
-        # clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
-                                   # max_features=0.015, criterion='gini')
-        # clf.fit(X_train, y_train)
-        # y_test_proba = clf.predict_proba(X_test)
-        # y_test_pred = clf.predict(X_test)
-        # fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
-        # clf_score[n_cv] = clf.score(X_test, y_test)
-                                   
-        # XGBoost
-        dtrain = xgb.DMatrix(X_train, label=y_train)
-        params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10,
-                  "colsample_bytree": 0.015, "subsample": 0.8}
-        num_rounds = n_estimators
-        evallist = [(dtrain, 'train')]
-        bst = xgb.train(params, dtrain, num_rounds, evallist)
-        dtest = xgb.DMatrix(X_test)
-        y_test_proba = bst.predict(dtest)
-        fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
-        roc_auc[n_cv] = auc(fpr, tpr)
-        clf_score[n_cv] = 0.0
+        if "ET" in model:
+            # clf = SGDClassifier(loss='log')
+            # clf = DecisionTreeClassifier()
+            # clf = KNeighborsClassifier()
+            # clf = RandomForestClassifier(n_estimators=n_estimators,
+            # class_weight=None, max_features=None)
+            # clf = AdaBoostClassifier(n_estimators=n_estimators, learning_rate=0.1)
+            clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
+                                       max_features=0.015, criterion='gini')
+            clf.fit(X_train, y_train)
+            y_test_proba = clf.predict_proba(X_test)
+            y_test_pred = clf.predict(X_test)
+            fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
+            clf_score[n_cv] = clf.score(X_test, y_test)
 
+        elif 'XGB' in model:
+            # XGBoost
+            dtrain = xgb.DMatrix(X_train, label=y_train)
+            params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10,
+                      "colsample_bytree": 0.015, "subsample": 0.8}
+            num_rounds = n_estimators
+            evallist = [(dtrain, 'train')]
+            bst = xgb.train(params, dtrain, num_rounds, evallist)
+            dtest = xgb.DMatrix(X_test)
+            y_test_proba = bst.predict(dtest)
+            fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
+            roc_auc[n_cv] = auc(fpr, tpr)
+            clf_score[n_cv] = 0.0
+            clf = 0
+            
         if plot_roc:
             # Plot ROC curve
             # plt.clf()
             plt.plot(fpr, tpr, label='ROC curve # %d (area = %0.2f)' %
                      (n_cv, roc_auc[n_cv]))
+            plt.plot([0, 1], [0, 1], 'k--')
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.0])
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title('Receiver operating characteristic example')
+            plt.legend(loc="lower right")
+            plt.show()
 
-            # plt.show()
-
-        # true positive rate at 0.5 threshold
-        # tpr_50[n_cv] = (
-            # tpr[sum(thresholds > 0.5)] + tpr[sum(thresholds > 0.5) - 1]) / 2.0
-
-        tpr_50 = 0.0
-            
         n_cv += 1
 
-    if plot_roc:
-        plt.plot([0, 1], [0, 1], 'k--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.0])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('Receiver operating characteristic example')
-        plt.legend(loc="lower right")
-        plt.show()
-
-    return clf, roc_auc, clf_score, tpr_50
+    return clf, roc_auc, clf_score
 
 
 def fit_and_predict(info_humans, info_bots, info_test,

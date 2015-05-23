@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import roc_curve, auc
 
-from fb_funcs import (predict_usample, append_merchandise, predict_cv,
+from fb_funcs import (append_merchandise, predict_cv,
                       fit_and_predict, append_info,
                       append_countries, keys_sig, keys_na,
                       append_bba, append_device, append_bids_intervals)
@@ -311,13 +311,12 @@ clf_score = []
 
 num_cv = 5
 for i in range(num_cv):
-    clf, ra, cs, tpr_50 \
+    clf, ra, cs \
         = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=2000, plot_roc=False)
+                     n_estimators=2000, plot_roc=False, model='XGB')
 
     print ra.mean(), ra.std()
     # print cs.mean(), cs.std()
-    # print tpr_50.mean(), tpr_50.std()
 
     roc_auc.append(ra.mean())
     roc_auc_std.append(ra.std())
@@ -330,7 +329,6 @@ roc_auc_std = np.array(roc_auc_std)
 print ""
 print roc_auc.mean(), roc_auc_std.mean()
 # print clf_score.mean(), clf_score.std()
-# print tpr_50
 
 
 ############################################################################
