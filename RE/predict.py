@@ -311,19 +311,3 @@ submission.to_csv('data/submission.csv', columns=['prediction'],
                   index_label='bidder_id')
 
 
-# #  second method
-# test_ids = info_test.index
-# test_ids_all = pd.read_csv('data/test.csv')['bidder_id']
-# test_ids_append = list(
-#     set(test_ids_all.values).difference(set(test_ids.values)))
-# submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
-# index=test_ids_append, columns=['prediction'])
-
-# # Make as submission file!
-# submission = pd.DataFrame(y_test_proba, index=test_ids,
-#                           columns=['prediction'])
-# submission = pd.concat([submission, submission_append], axis=0)
-# submission.to_csv('data/submission.csv', index_label='bidder_id')
-
-# end_time = time.time()
-# print "Time elapsed: %.2f" % (end_time - start_time)

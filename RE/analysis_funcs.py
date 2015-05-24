@@ -14,7 +14,6 @@ from pdb import set_trace
 
 auction_periods = np.array([[9.62, 9.66], [9.68, 9.72], [9.74, 9.78]]) * 1e15
 
-
 def gather_info(bids_data):
     """
     Gather the useful infromation from bids data.
@@ -171,7 +170,7 @@ def gather_device_info(bids_data):
     return bidders_device_info
 
 
-def gather_count_info(bids_data, item):
+def gather_count_info(bids_data, item, item_list=None):
     """
     Gather the number of count that item occurs for the same bidder.
 
@@ -191,9 +190,16 @@ def gather_count_info(bids_data, item):
         # get bids by this bidder
         bids = bids_data[bids_data['bidder_id'] == bidder_ids[i]]
 
-        # number of occurences of each unique item by this bidder
-        bidders_count_info.append(bids[item].value_counts())
-
+        # import pdb
+        # pdb.set_trace()
+        if item_list is None:
+            # number of occurences of each unique item by this bidder
+            bidders_count_info.append(bids[item].value_counts())
+        else:
+            item_u = bids[item].unique()
+            item_u = set(item_list).intersection(item_u)
+            bidders_count_info.append((bids[item].value_counts())[item_u])
+            
         pd.concat([pd.DataFrame(bidders_count_info[0]).transpose(),
                    pd.DataFrame([bidder_ids[0]])], axis=1)
 
@@ -203,7 +209,7 @@ def gather_count_info(bids_data, item):
                      pd.DataFrame(bidder_ids, columns=['bidder_id'])], axis=1)\
         .set_index('bidder_id')
 
-    bidders_count_info.fillna(0)
+    bidders_count_info.fillna(0, inplace=True)
 
     return bidders_count_info
 
@@ -285,3 +291,4 @@ def gather_info_by_periods(bids_data):
     bidders_info.fillna(0, inplace=True)
 
     return bidders_info
+                

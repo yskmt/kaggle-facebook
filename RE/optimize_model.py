@@ -187,7 +187,7 @@ else:
 info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
-
+=
 keys_basic = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
               'num_urls', 'num_countries', 'num_merchs']
 
@@ -257,10 +257,15 @@ def xgb_objective(params):
     features = info_given.sort(axis=1).keys()
 
     # xgboost!
-    xgb_params = {"objective": "binary:logistic", 'eta':
-                  params['eta'], 'gamma': params['gamma'],
-                  'max_depth': params['max_depth'], 'subsample': params['subsample'],
-                  'colsample_bytree': params['colsample_bytree']}
+    xgb_params = {"objective": "binary:logistic",
+                  'eta': params['eta'],
+                  'gamma': params['gamma'],
+                  'max_depth': params['max_depth'],
+                  'min_child_weight': params['min_child_weight'],
+                  'subsample': params['subsample'],
+                  'colsample_bytree': params['colsample_bytree'],
+                  'nthread': params['nthread'],
+                  'silent': params['silent']}
     num_rounds = int(params['num_rounds'])
 
     dtrain = xgb.DMatrix(X_train, label=y_train)
@@ -273,28 +278,31 @@ def xgb_objective(params):
         map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
     ind_max = np.argmax(np.array(
         map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
-
+    std_max = float(cv_result[ind_max].aplit('\t')[1].split(':')[1].split('+')[1])
 
     # logging
     with open('log_results.txt', 'a') as f:
-        f.write(str({'loss': -auc_max, 'status': STATUS_OK, 'ind': ind_max}))
+        f.write(str({'loss': auc_max, 'std': std_max,'status':
+                     STATUS_OK, 'ind': ind_max}))
         f.write('\n')
+
     with open('log_params.txt', 'a') as f:
         f.write(str(params))
         f.write('\n')
     
-    return {'loss': -auc_max, 'status': STATUS_OK, 'ind': ind_max}
+    return {'loss': -auc_max, 'std': std_max, 'status': STATUS_OK, 'ind': ind_max}
 
-
+    
 def optimize(trials):
     space = {
         'num_rounds': 5000,
-        'eta': hp.quniform('eta', 0.001, 0.5, 0.001),
+        'eta': hp.choice('eta', [0.001, 0.002]),
+        'gamma': hp.quniform('gamma', 0.5, 10, 0.5),
         'max_depth': hp.quniform('max_depth', 4, 13, 1),
-        'subsample': hp.quniform('subsample', 0.5, 1, 0.05),
-        'gamma': hp.quniform('gamma', 0.5, 1, 0.05),
+        'min_child_weight': hp.quniform('min_child_weight', 1, 10, 1),
+        'subsample': hp.quniform('subsample', 0.1, 1, 0.05),
         'colsample_bytree': hp.quniform('colsample_bytree', 0.001, 1, 0.001),
-        'nthread': 6,
+        'nthread': 8,
         'silent': 1
     }
 

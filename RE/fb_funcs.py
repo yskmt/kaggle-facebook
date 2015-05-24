@@ -90,8 +90,10 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
         elif 'XGB' in model:
             # XGBoost
             dtrain = xgb.DMatrix(X_train, label=y_train)
-            params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10,
-                      "colsample_bytree": 0.015, "subsample": 0.8}
+
+            params = {"objective": "binary:logistic", "eta": 0.001,
+                      "max_depth": 13, "colsample_bytree": 0.322,
+                      "subsample": 0.85, 'gamma':0.7, 'nthread': 6}
             num_rounds = n_estimators
             evallist = [(dtrain, 'train')]
             bst = xgb.train(params, dtrain, num_rounds, evallist)
