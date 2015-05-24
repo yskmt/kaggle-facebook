@@ -9,6 +9,10 @@ author: Yusuke Sakamoto
 
 import numpy as np
 import pandas as pd
+from pdb import set_trace
+
+
+auction_periods = np.array([[9.62, 9.66], [9.68, 9.72], [9.74, 9.78]]) * 1e15
 
 def gather_info(bids_data):
     """
@@ -166,7 +170,6 @@ def gather_device_info(bids_data):
     return bidders_device_info
 
 
-
 def gather_count_info(bids_data, item, item_list=None):
     """
     Gather the number of count that item occurs for the same bidder.
@@ -209,3 +212,83 @@ def gather_count_info(bids_data, item, item_list=None):
     bidders_count_info.fillna(0, inplace=True)
 
     return bidders_count_info
+
+
+def gather_info_by_periods(bids_data):
+    """
+    Gather the useful infromation from bids data.
+    """
+
+    bidder_ids = bids_data['bidder_id'].unique()
+    num_bidders = len(bidder_ids)
+
+    bidders_info = []
+    # for each bidder
+    for i in range(num_bidders):
+        if i % 10 == 0:
+            print "%d/%d" % (i, num_bidders)
+        # get bids by this bidder
+        bids = bids_data[bids_data['bidder_id'] == bidder_ids[i]]
+
+        num_periods = 0
+        num_bids = np.zeros(3)
+        num_aucs = np.zeros(3)
+        num_devices = np.zeros(3)
+        num_countries = np.zeros(3)
+        num_ips = np.zeros(3)
+        num_urls = np.zeros(3)
+        period_info = []
+        for ap in range(3):
+            bids_per = bids[(bids['time'] < auction_periods[ap, 1])
+                            & (bids['time'] > auction_periods[ap, 0])]
+
+            # number of bids by this bidder
+            num_bids[ap] = len(bids_per)
+            # check the number of period participated
+            if num_bids[ap] > 0:
+                num_periods += 1
+
+            # number of auction by this bidder
+            num_aucs[ap] = len(bids_per['auction'].unique())
+            # number of devices used by this bidder
+            num_devices[ap] = len(bids_per['device'].unique())
+            # number of countries by this bidder
+            num_countries[ap] = len(bids_per['country'].unique())
+            # number of ips by this bidder
+            num_ips[ap] = len(bids_per['ip'].unique())
+            # number of urls by this bidder
+            num_urls[ap] = len(bids_per['url'].unique())
+
+            tmp_info = np.array([num_bids[ap], num_aucs[ap],
+                                 num_devices[ap], num_countries[ap],
+                                 num_ips[ap], num_urls[ap]])
+            tmp_info = tmp_info.reshape(1, len(tmp_info))
+
+            period_info.append(pd.DataFrame(
+                tmp_info,  index=[bidder_ids[i]],
+                columns=['%d_num_bids' % ap, '%d_num_aucs' % ap,
+                         '%d_num_devices' % ap, '%d_num_countries' % ap,
+                         '%d_num_ips' % ap, '%d_num_urls' % ap]
+            ))
+
+        # average values for participated periods
+        tmp_info = np.array([sum(num_bids), sum(num_aucs),
+                             sum(num_devices), sum(num_countries),
+                             sum(num_ips), sum(num_urls), num_periods*num_periods])\
+            / float(num_periods)
+        tmp_info = tmp_info.reshape(1, len(tmp_info))
+        period_info.append(pd.DataFrame(
+            tmp_info,  index=[bidder_ids[i]],
+            columns=['ave_num_bids', 'ave_num_aucs',
+                     'ave_num_devices', 'ave_num_countries',
+                     'ave_num_ips', 'ave_num_urls', 'num_periods']
+        ))            
+        bidders_info.append(pd.concat(period_info, axis=1))
+
+    bidders_info = pd.concat(bidders_info, axis=0)
+    bidders_info.index.name = 'bidder_id'
+
+    bidders_info.fillna(0, inplace=True)
+
+    return bidders_info
+                

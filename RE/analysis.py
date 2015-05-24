@@ -9,7 +9,8 @@ author: Yusuke Sakamoto
 
 import pandas as pd
 
-from analysis_funcs import (gather_info, gather_country_info,
+from analysis_funcs import (gather_info, gather_info_by_periods,
+                            gather_country_info,
                             gather_auc_bids_info, gather_device_info,
                             gather_count_info)
 
@@ -132,6 +133,23 @@ uinfo_test.to_csv('data/url_info_test.csv')
 # cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
 # cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
 # cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
+
+
+############################################################################
+# Gathering basic counts information by each period
+############################################################################
+
+print "Analyzing huaman basic count data per each period..."
+info_humans_bp = gather_info_by_periods(bids_humans)
+info_humans_bp.to_csv('data/info_humans_bp.csv')
+
+print "Analyzing huaman basic count data per each period..."
+info_bots_bp = gather_info_by_periods(bids_bots)
+info_bots_bp.to_csv('data/info_bots_bp.csv')
+
+print "Analyzing huaman basic count data per each period..."
+info_test_bp = gather_info_by_periods(bids_test)
+info_test_bp.to_csv('data/info_test_bp.csv')
 
 
 ############################################################################

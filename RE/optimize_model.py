@@ -187,55 +187,7 @@ else:
 info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
-
-# features selection by chi2 test
-# num_features = 40
-# indx_ex, ft_ex = select_k_best_features(num_features, info_humans, info_bots)
-# keys_use = ft_ex
-
-# 40 out of 7495 features globally
-# by chi2 test
-# keys_use = ['au', 'bba_1', 'bba_2', 'bba_3', 'num_bids', 'num_ips',
-#             'phone1029', 'phone113', 'phone115', 'phone118',
-#             'phone119', 'phone1211', 'phone122', 'phone13',
-#             'phone143', 'phone157', 'phone17', 'phone201', 'phone204',
-#             'phone237', 'phone248', 'phone278', 'phone28', 'phone290',
-#             'phone322', 'phone346', 'phone386', 'phone389',
-#             'phone391', 'phone46', 'phone466', 'phone479', 'phone503',
-#             'phone524', 'phone528', 'phone56', 'phone62', 'phone718',
-#             'phone796', 'th']
-
-# # by using extratrees clf globally
-# keys_use = ['bba_5', 'bba_4', 'bba_3', 'phone46', 'num_bids', 'bba_6', 'bba_8',
-#             'bba_2', 'bba_1', 'bba_7', 'au', 'bba_10', 'bba_9', 'bba_12',
-#             'bba_14', 'phone195', 'bba_11', 'num_aucs', 'bba_13', 'phone143',
-#             'bba_15', 'phone63', 'bba_16', 'num_ips', 'bba_20', 'bba_17',
-#             'bba_18', 'phone55', 'num_urls', 'phone1030', 'num_countries',
-#             'phone150', 'phone144', 'bba_21', 'num_devices', 'phone33', 'bba_19',
-#             'bba_22', 'phone1026', 'bba_24']
-# keys_use = keys_use[:31]
-
-# # # 10*4 features selected from each category by chi2
-# keys_use1 = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
-#             'phone237', 'phone389', 'phone46', 'phone62', 'phone718',
-#             'at', 'au', 'ca', 'de', 'in', 'jp', 'kr', 'ru', 'th',
-#             'us', 'bba_1', 'bba_14', 'bba_2', 'bba_3', 'bba_4',
-#             'bba_5', 'bba_6', 'bba_7', 'bba_8', 'bba_9', 'computers',
-#             'jewelry', 'mobile', 'num_aucs', 'num_bids',
-#             'num_countries', 'num_devices', 'num_ips', 'num_urls',
-#             'sporting goods']
-
-# # 10*4 features selected from each category by ET
-# keys_use2 = ['au', 'num_bids', 'za', 'phone55', 'phone739',
-#             'num_devices', 'ca', 'my', 'num_ips', 'num_aucs',
-#             'num_urls', 'phone996', 'phone150', 'phone640', 'bba_14',
-#             'bba_15', 'num_countries', 'phone136', 'in', 'phone33',
-#             'cn', 'bba_17', 'ch', 'ru', 'ar', 'bba_19', 'bba_18',
-#             'phone58', 'bba_30', 'phone1030', 'bba_31', 'bba_33',
-#             'phone15', 'bba_32', 'bba_35', 'ec']
-
-# keys_use = list(set(keys_use1).union(keys_use2))
-
+=
 keys_basic = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
               'num_urls', 'num_countries', 'num_merchs']
 
@@ -262,8 +214,6 @@ keys_bbaucs = ['bba_35', 'bba_33', 'bba_32', 'bba_31', 'bba_30', 'bba_19',
                'bba_23', 'bba_24', 'bba_25', 'bba_26', 'bba_27', 'bba_9', 'bba_8',
                'bba_5', 'bba_4', 'bba_7', 'bba_6', 'bba_1', 'bba_3', 'bba_2']
 
-# keys_bbaucs = ['bba_' + str(i) for i in range(1, 6)]
-
 keys_bintervals = ['int_0', 'int_1', 'int_2', 'int_3', 'int_4',
                    'int_5', 'int_6', 'int_7', 'int_8', 'int_9', 'int_10']
 
@@ -272,11 +222,10 @@ keys_nbs = ['num_bids_sametime_sameauc', 'num_bids_sametime_diffauc']
 keys_bstr = ['streak_0', 'streak_1', 'streak_2', 'streak_3',
              'streak_4', 'streak_5', 'streak_6', 'streak_7', 'streak_8', 'streak_9']
 
-keys_use = keys_basic[:-1] + keys_merchandises + keys_countries + \
-    keys_devices + keys_bbaucs + keys_bintervals + keys_nbs + keys_bstr
+# keys_use = keys_basic[:-1] + keys_merchandises + keys_countries + \
+#     keys_devices + keys_bbaucs + keys_bintervals + keys_nbs + keys_bstr
 
 keys_use = keys_all
-# keys_use = keys_use[:30]
 
 print "Extracting keys..."
 info_humans = info_humans[keys_use]
@@ -318,7 +267,7 @@ def xgb_objective(params):
                   'nthread': params['nthread'],
                   'silent': params['silent']}
     num_rounds = int(params['num_rounds'])
-    
+
     dtrain = xgb.DMatrix(X_train, label=y_train)
 
     cv = 5
@@ -331,6 +280,7 @@ def xgb_objective(params):
         map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
     std_max = float(cv_result[ind_max].aplit('\t')[1].split(':')[1].split('+')[1])
 
+    # logging
     with open('log_results.txt', 'a') as f:
         f.write(str({'loss': auc_max, 'std': std_max,'status':
                      STATUS_OK, 'ind': ind_max}))
@@ -342,7 +292,7 @@ def xgb_objective(params):
     
     return {'loss': -auc_max, 'std': std_max, 'status': STATUS_OK, 'ind': ind_max}
 
-
+    
 def optimize(trials):
     space = {
         'num_rounds': 5000,
@@ -359,9 +309,9 @@ def optimize(trials):
     best = fmin(xgb_objective, space,
                 algo=tpe.suggest, trials=trials, max_evals=100)
 
+    # logging
     with open('trials_results.txt', 'w') as f:
         json.dump(trials.results, f)
-
     with open('trials_trials.txt', 'w') as f:
         json.dump(trials.trials, f)
 
