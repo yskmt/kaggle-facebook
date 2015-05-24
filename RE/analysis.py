@@ -9,7 +9,8 @@ author: Yusuke Sakamoto
 
 import pandas as pd
 
-from analysis_funcs import (gather_info, gather_country_info,
+from analysis_funcs import (gather_info, gather_info_by_periods,
+                            gather_country_info,
                             gather_auc_bids_info, gather_device_info,
                             gather_count_info)
 
@@ -92,21 +93,21 @@ bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
 # Gathering url counts information
 ############################################################################
 
-print "Analyzing url huaman data..."
-dinfo_humans = gather_count_info(bids_humans, 'url')
-dinfo_humans.to_csv('data/url_info_humans.csv')
+# print "Analyzing url huaman data..."
+# dinfo_humans = gather_count_info(bids_humans, 'url')
+# dinfo_humans.to_csv('data/url_info_humans.csv')
 
-print "Analyzing url huaman data..."
-dinfo_bots = gather_count_info(bids_bots, 'url')
-dinfo_bots.to_csv('data/url_info_bots.csv')
+# print "Analyzing url huaman data..."
+# dinfo_bots = gather_count_info(bids_bots, 'url')
+# dinfo_bots.to_csv('data/url_info_bots.csv')
 
-print "Analyzing url huaman data..."
-dinfo_test = gather_count_info(bids_test, 'url')
-dinfo_test.to_csv('data/url_info_test.csv')
+# print "Analyzing url huaman data..."
+# dinfo_test = gather_count_info(bids_test, 'url')
+# dinfo_test.to_csv('data/url_info_test.csv')
 
-dinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
-dinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
-dinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+# dinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+# dinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+# dinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
 
 
 ############################################################################
@@ -128,6 +129,23 @@ dinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
 # cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
 # cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
 # cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
+
+
+############################################################################
+# Gathering basic counts information by each period
+############################################################################
+
+print "Analyzing huaman basic count data per each period..."
+info_humans_bp = gather_info_by_periods(bids_humans)
+info_humans_bp.to_csv('data/info_humans_bp.csv')
+
+print "Analyzing huaman basic count data per each period..."
+info_bots_bp = gather_info_by_periods(bids_bots)
+info_bots_bp.to_csv('data/info_bots_bp.csv')
+
+print "Analyzing huaman basic count data per each period..."
+info_test_bp = gather_info_by_periods(bids_test)
+info_test_bp.to_csv('data/info_test_bp.csv')
 
 
 ############################################################################
