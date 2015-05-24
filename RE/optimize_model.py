@@ -1,5 +1,5 @@
 """
-predict.py
+optimize_model.py
 
 Facebook Recruiting IV: Human or Robot?
 
@@ -7,23 +7,19 @@ author: Yusuke Sakamoto
 
 """
 
-from pdb import set_trace
+import json
 import numpy as np
 import pandas as pd
-import time
-import matplotlib.pyplot as plt
 
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import auc
+
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+import xgboost as xgb
 
 from fb_funcs import (append_merchandise, predict_cv,
                       fit_and_predict, append_info,
                       append_countries, keys_sig, keys_na,
                       append_bba, append_device, append_bids_intervals)
-from feature_selection import select_k_best_features
-
-
-start_time = time.time()
 
 ############################################################################
 # Load bsic data
@@ -192,54 +188,6 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-# features selection by chi2 test
-# num_features = 40
-# indx_ex, ft_ex = select_k_best_features(num_features, info_humans, info_bots)
-# keys_use = ft_ex
-
-# 40 out of 7495 features globally
-# by chi2 test
-# keys_use = ['au', 'bba_1', 'bba_2', 'bba_3', 'num_bids', 'num_ips',
-#             'phone1029', 'phone113', 'phone115', 'phone118',
-#             'phone119', 'phone1211', 'phone122', 'phone13',
-#             'phone143', 'phone157', 'phone17', 'phone201', 'phone204',
-#             'phone237', 'phone248', 'phone278', 'phone28', 'phone290',
-#             'phone322', 'phone346', 'phone386', 'phone389',
-#             'phone391', 'phone46', 'phone466', 'phone479', 'phone503',
-#             'phone524', 'phone528', 'phone56', 'phone62', 'phone718',
-#             'phone796', 'th']
-
-# # by using extratrees clf globally
-# keys_use = ['bba_5', 'bba_4', 'bba_3', 'phone46', 'num_bids', 'bba_6', 'bba_8',
-#             'bba_2', 'bba_1', 'bba_7', 'au', 'bba_10', 'bba_9', 'bba_12',
-#             'bba_14', 'phone195', 'bba_11', 'num_aucs', 'bba_13', 'phone143',
-#             'bba_15', 'phone63', 'bba_16', 'num_ips', 'bba_20', 'bba_17',
-#             'bba_18', 'phone55', 'num_urls', 'phone1030', 'num_countries',
-#             'phone150', 'phone144', 'bba_21', 'num_devices', 'phone33', 'bba_19',
-#             'bba_22', 'phone1026', 'bba_24']
-# keys_use = keys_use[:31]
-
-# # # 10*4 features selected from each category by chi2
-# keys_use1 = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
-#             'phone237', 'phone389', 'phone46', 'phone62', 'phone718',
-#             'at', 'au', 'ca', 'de', 'in', 'jp', 'kr', 'ru', 'th',
-#             'us', 'bba_1', 'bba_14', 'bba_2', 'bba_3', 'bba_4',
-#             'bba_5', 'bba_6', 'bba_7', 'bba_8', 'bba_9', 'computers',
-#             'jewelry', 'mobile', 'num_aucs', 'num_bids',
-#             'num_countries', 'num_devices', 'num_ips', 'num_urls',
-#             'sporting goods']
-
-# # 10*4 features selected from each category by ET
-# keys_use2 = ['au', 'num_bids', 'za', 'phone55', 'phone739',
-#             'num_devices', 'ca', 'my', 'num_ips', 'num_aucs',
-#             'num_urls', 'phone996', 'phone150', 'phone640', 'bba_14',
-#             'bba_15', 'num_countries', 'phone136', 'in', 'phone33',
-#             'cn', 'bba_17', 'ch', 'ru', 'ar', 'bba_19', 'bba_18',
-#             'phone58', 'bba_30', 'phone1030', 'bba_31', 'bba_33',
-#             'phone15', 'bba_32', 'bba_35', 'ec']
-
-# keys_use = list(set(keys_use1).union(keys_use2))
-
 keys_basic = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
               'num_urls', 'num_countries', 'num_merchs']
 
@@ -266,8 +214,6 @@ keys_bbaucs = ['bba_35', 'bba_33', 'bba_32', 'bba_31', 'bba_30', 'bba_19',
                'bba_23', 'bba_24', 'bba_25', 'bba_26', 'bba_27', 'bba_9', 'bba_8',
                'bba_5', 'bba_4', 'bba_7', 'bba_6', 'bba_1', 'bba_3', 'bba_2']
 
-# keys_bbaucs = ['bba_' + str(i) for i in range(1, 6)]
-
 keys_bintervals = ['int_0', 'int_1', 'int_2', 'int_3', 'int_4',
                    'int_5', 'int_6', 'int_7', 'int_8', 'int_9', 'int_10']
 
@@ -276,11 +222,10 @@ keys_nbs = ['num_bids_sametime_sameauc', 'num_bids_sametime_diffauc']
 keys_bstr = ['streak_0', 'streak_1', 'streak_2', 'streak_3',
              'streak_4', 'streak_5', 'streak_6', 'streak_7', 'streak_8', 'streak_9']
 
-keys_use = keys_basic[:-1] + keys_merchandises + keys_countries + \
-    keys_devices + keys_bbaucs + keys_bintervals + keys_nbs + keys_bstr
+# keys_use = keys_basic[:-1] + keys_merchandises + keys_countries + \
+#     keys_devices + keys_bbaucs + keys_bintervals + keys_nbs + keys_bstr
 
 keys_use = keys_all
-# keys_use = keys_use[:30]
 
 print "Extracting keys..."
 info_humans = info_humans[keys_use]
@@ -288,98 +233,86 @@ info_bots = info_bots[keys_use]
 info_test = info_test[keys_use]
 
 
-############################################################################
-# Save/Load preprocessed data
-############################################################################
+def xgb_objective(params):
+    print params
 
-# info_humans.to_csv('data/info_humans_pp2.csv')
-# info_bots.to_csv('data/info_bots_pp2.csv')
-# info_test.to_csv('data/info_test_pp2.csv')
+    num_humans = len(info_humans)
+    num_bots = len(info_bots)
 
-# info_humans = read_csv(info_humans.to_csv('data/info_humans_pp.csv')
-# info_bots = read_csv('data/info_bots_pp.csv')
-# info_test = read_csv('data/info_test_pp.csv')
+    # combine humans and bots data to create given data
+    info_given = pd.concat([info_humans, info_bots], axis=0)
+    labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
+    num_given = len(labels_train)
 
-############################################################################
-# k-fold Cross Validaton
-############################################################################
-# print "K-fold CV..."
+    # shuffle just in case
+    index_sh = np.random.choice(num_given, num_given, replace=False)
+    info_given = info_given.iloc[index_sh]
+    labels_train = labels_train[index_sh]
 
-roc_auc = []
-roc_auc_std = []
-clf_score = []
+    # get matrices forms
+    X_train = info_given.sort(axis=1).as_matrix()
+    y_train = labels_train
+    X_test = info_test.sort(axis=1).as_matrix()
 
-num_cv = 5
-for i in range(num_cv):
-    clf, ra, cs \
-        = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=2000, plot_roc=False, model='XGB')
+    features = info_given.sort(axis=1).keys()
 
-    print ra.mean(), ra.std()
-    # print cs.mean(), cs.std()
+    # xgboost!
+    xgb_params = {"objective": "binary:logistic", 'eta':
+                  params['eta'], 'gamma': params['gamma'],
+                  'max_depth': params['max_depth'], 'subsample': params['subsample'],
+                  'colsample_bytree': params['colsample_bytree']}
+    num_rounds = int(params['num_rounds'])
 
-    roc_auc.append(ra.mean())
-    roc_auc_std.append(ra.std())
-    # clf_score.append(cs.mean())
+    dtrain = xgb.DMatrix(X_train, label=y_train)
 
-roc_auc = np.array(roc_auc)
-roc_auc_std = np.array(roc_auc_std)
-# clf_score = np.array(clf_score)
+    cv = 5
+    cv_result = xgb.cv(xgb_params, dtrain, num_rounds, nfold=cv,
+                       metrics={'rmse', 'error', 'auc'}, seed=0)
 
-print ""
-print roc_auc.mean(), roc_auc_std.mean()
-# print clf_score.mean(), clf_score.std()
-
-
-############################################################################
-# fit and predict
-############################################################################
-
-y_test_proba, y_train_proba, cvr, feature_importance\
-    = fit_and_predict(info_humans, info_bots, info_test, model='XGB',
-                      n_estimators=2000, p_use=None, plot_importance=False)
-
-try:
-    auc_max = np.max(np.array(map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cvr)))
-    ind_max = np.argmax(np.array(map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cvr)))
-
-    print ind_max, auc_max
-except:
-    pass
-############################################################################
-# submission file generation
-############################################################################
-
-# 70 bidders in test.csv do not have any data in bids.csv. Thus they
-# are not included in analysis/prediction, but they need to be
-# appended in the submission. The prediction of these bidders do not matter.
-
-print "writing a submission file..."
-
-# first method
-submission = pd.DataFrame(
-    y_test_proba, index=info_test.index, columns=['prediction'])
-test_bidders = pd.read_csv('data/test.csv', index_col=0)
-
-submission = pd.concat([submission, test_bidders], axis=1)
-submission.fillna(0, inplace=True)
-submission.to_csv('data/submission.csv', columns=['prediction'],
-                  index_label='bidder_id')
+    auc_max = np.max(np.array(
+        map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
+    ind_max = np.argmax(np.array(
+        map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
 
 
-# #  second method
-# test_ids = info_test.index
-# test_ids_all = pd.read_csv('data/test.csv')['bidder_id']
-# test_ids_append = list(
-#     set(test_ids_all.values).difference(set(test_ids.values)))
-# submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
-# index=test_ids_append, columns=['prediction'])
+    # logging
+    with open('log_results.txt', 'a') as f:
+        f.write(str({'loss': -auc_max, 'status': STATUS_OK, 'ind': ind_max}))
+        f.write('\n')
+    with open('log_params.txt', 'a') as f:
+        f.write(str(params))
+        f.write('\n')
+    
+    return {'loss': -auc_max, 'status': STATUS_OK, 'ind': ind_max}
 
-# # Make as submission file!
-# submission = pd.DataFrame(y_test_proba, index=test_ids,
-#                           columns=['prediction'])
-# submission = pd.concat([submission, submission_append], axis=0)
-# submission.to_csv('data/submission.csv', index_label='bidder_id')
 
-# end_time = time.time()
-# print "Time elapsed: %.2f" % (end_time - start_time)
+def optimize(trials):
+    space = {
+        'num_rounds': 5000,
+        'eta': hp.quniform('eta', 0.001, 0.5, 0.001),
+        'max_depth': hp.quniform('max_depth', 4, 13, 1),
+        'subsample': hp.quniform('subsample', 0.5, 1, 0.05),
+        'gamma': hp.quniform('gamma', 0.5, 1, 0.05),
+        'colsample_bytree': hp.quniform('colsample_bytree', 0.001, 1, 0.001),
+        'nthread': 6,
+        'silent': 1
+    }
+
+    best = fmin(xgb_objective, space,
+                algo=tpe.suggest, trials=trials, max_evals=100)
+
+    # logging
+    with open('trials_results.txt', 'w') as f:
+        json.dump(trials.results, f)
+    with open('trials_trials.txt', 'w') as f:
+        json.dump(trials.trials, f)
+
+    print best
+
+
+# Trials object where the history of search will be stored
+trials = Trials()
+
+best = optimize(trials)
+
+print best
