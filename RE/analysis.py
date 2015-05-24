@@ -95,19 +95,19 @@ bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
 
 # because there are too many urls, just check the ones occured for
 # both humans and bots
-url_list = list(set(bids_bots['url'].unique()).intersection(bids_humans['url'].unique()))
+# url_list = list(set(bids_bots['url'].unique()).intersection(bids_humans['url'].unique()))
 
-print "Analyzing url bots data..."
-uinfo_bots = gather_count_info(bids_bots, 'url', item_list=url_list)
-uinfo_bots.to_csv('data/url_info_bots.csv')
+# print "Analyzing url bots data..."
+# uinfo_bots = gather_count_info(bids_bots, 'url', item_list=url_list)
+# uinfo_bots.to_csv('data/url_info_bots.csv')
 
-print "Analyzing url huaman data..."
-uinfo_humans = gather_count_info(bids_humans, 'url', item_list=url_list)
-uinfo_humans.to_csv('data/url_info_humans.csv')
+# print "Analyzing url huaman data..."
+# uinfo_humans = gather_count_info(bids_humans, 'url', item_list=url_list)
+# uinfo_humans.to_csv('data/url_info_humans.csv')
 
-print "Analyzing url test data..."
-uinfo_test = gather_count_info(bids_test, 'url', item_list=url_list)
-uinfo_test.to_csv('data/url_info_test.csv')
+# print "Analyzing url test data..."
+# uinfo_test = gather_count_info(bids_test, 'url', item_list=url_list)
+# uinfo_test.to_csv('data/url_info_test.csv')
 
 # uinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
 # uinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
