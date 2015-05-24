@@ -176,7 +176,7 @@ info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
 ############################################################################
-# bid counts for each period
+# bid counts for each period data
 print "Adding bid count for each period data"
 bcepinfo_humans = pd.read_csv('data/info_humans_bp.csv', index_col=0)
 bcepinfo_bots = pd.read_csv('data/info_bots_bp.csv', index_col=0)
@@ -246,6 +246,10 @@ info_test = info_test[keys_use]
 ############################################################################
 # k-fold Cross Validaton
 ############################################################################
+params = {'colsample_bytree': 0.367, 'silent': 1, 'num_rounds': 3300,
+          'nthread': 8, 'min_child_weight': 3.0, 'subsample': 0.9, 'eta': 0.002,
+          'max_depth': 5.0, 'gamma': 1.0}
+
 # print "K-fold CV..."
 
 # roc_auc = []
@@ -255,8 +259,8 @@ info_test = info_test[keys_use]
 # num_cv = 5
 # for i in range(num_cv):
 #     clf, ra, cs \
-#         = predict_cv(info_humans, info_bots, n_folds=5,
-#                      n_estimators=2000, plot_roc=False, model='XGB')
+#         = predict_cv(info_humans, info_bots, n_folds=5, model='XGB',
+#                      params=params)
 
 #     print ra.mean(), ra.std()
 #     # print cs.mean(), cs.std()
@@ -271,16 +275,14 @@ info_test = info_test[keys_use]
 
 # print ""
 # print roc_auc.mean(), roc_auc_std.mean()
-# # print clf_score.mean(), clf_score.std()
-
 
 ############################################################################
 # fit and predict
 ############################################################################
 
 y_test_proba, y_train_proba, cvr, feature_importance\
-    = fit_and_predict(info_humans, info_bots, info_test, model='XGB_CV',
-                      n_estimators=2000, p_use=None, plot_importance=False)
+    = fit_and_predict(info_humans, info_bots, info_test, model='XGB',
+                      params=params)
 
 try:
     auc_max = np.max(np.array(map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cvr)))

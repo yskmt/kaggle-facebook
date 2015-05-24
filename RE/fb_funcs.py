@@ -33,8 +33,8 @@ keys_sig = ['ar', 'au', 'bd', 'dj', 'ga', 'gq', 'id', 'mc', 'ml',
 keys_na = ['an', 'aw', 'bi', 'cf', 'er', 'gi', 'gn', 'gp', 'mh', 'nc',
            'sb', 'tc', 'vi', 'ws']
 
-def predict_cv(info_humans, info_bots, plot_roc=False,
-               n_folds=5, n_estimators=1000, model="ET"):
+def predict_cv(info_humans, info_bots, plot_roc=False, model="ET", n_folds=5,
+               params=None):
     """
     prediction by undersampling
 
@@ -90,13 +90,19 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
         elif 'XGB' in model:
             # XGBoost
             dtrain = xgb.DMatrix(X_train, label=y_train)
+            xgb_params = {"objective": "binary:logistic",
+                          'eta': params['eta'],
+                          'gamma': params['gamma'],
+                          'max_depth': params['max_depth'],
+                          'min_child_weight': params['min_child_weight'],
+                          'subsample': params['subsample'],
+                          'colsample_bytree': params['colsample_bytree'],
+                          'nthread': params['nthread'],
+                          'silent': params['silent']}
+            num_rounds = int(params['num_rounds'])
 
-            params = {"objective": "binary:logistic", "eta": 0.001,
-                      "max_depth": 13, "colsample_bytree": 0.322,
-                      "subsample": 0.85, 'gamma':0.7, 'nthread': 6}
-            num_rounds = n_estimators
             evallist = [(dtrain, 'train')]
-            bst = xgb.train(params, dtrain, num_rounds, evallist)
+            bst = xgb.train(xgb_params, dtrain, num_rounds, evallist)
             dtest = xgb.DMatrix(X_test)
             y_test_proba = bst.predict(dtest)
             fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
@@ -124,8 +130,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False,
 
 
 def fit_and_predict(info_humans, info_bots, info_test,
-                    n_estimators=1000, p_use=None, model="ET",
-                    plot_importance=False):
+                    model="ET", params=None, p_use=None):
 
     num_humans = len(info_humans)
     num_bots = len(info_bots)
@@ -212,20 +217,27 @@ def fit_and_predict(info_humans, info_bots, info_test,
 
         return y_pred[:, 1], y_train_pred[:, 1], 0, list((features[indices]))
     elif "XGB" in model:
-        # xgboost!
-        params = {"objective": "binary:logistic", "eta": 0.01, "max_depth": 10,
-                  "colsample_bytree": 0.015, "subsample": 0.8}
-        num_rounds = n_estimators
+        xgb_params = {"objective": "binary:logistic",
+                      'eta': params['eta'],
+                      'gamma': params['gamma'],
+                      'max_depth': params['max_depth'],
+                      'min_child_weight': params['min_child_weight'],
+                      'subsample': params['subsample'],
+                      'colsample_bytree': params['colsample_bytree'],
+                      'nthread': params['nthread'],
+                      'silent': params['silent']}
+        num_rounds = int(params['num_rounds'])
+        
         dtrain = xgb.DMatrix(X_train, label=y_train)
 
         if "CV" in model:
             cv=5
-            cv_result = xgb.cv(params, dtrain, num_rounds, nfold=cv,
+            cv_result = xgb.cv(xgb_params, dtrain, num_rounds, nfold=cv,
                                metrics={'rmse', 'error', 'auc'}, seed=0)
             return 0, 0, cv_result, 0
         else:
             evallist = [(dtrain, 'train')]
-            bst = xgb.train(params, dtrain, num_rounds, evallist)
+            bst = xgb.train(xgb_params, dtrain, num_rounds, evallist)
             dtest = xgb.DMatrix(X_test)
             y_pred = bst.predict(dtest)
             y_train_pred = bst.predict(dtrain)
