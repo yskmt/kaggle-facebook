@@ -33,7 +33,7 @@ keys_sig = ['ar', 'au', 'bd', 'dj', 'ga', 'gq', 'id', 'mc', 'ml',
 keys_na = ['an', 'aw', 'bi', 'cf', 'er', 'gi', 'gn', 'gp', 'mh', 'nc',
            'sb', 'tc', 'vi', 'ws']
 
-def predict_cv(info_humans, info_bots, plot_roc=False, model="ET", n_folds=5,
+def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
                params=None):
     """
     prediction by undersampling
@@ -41,6 +41,8 @@ def predict_cv(info_humans, info_bots, plot_roc=False, model="ET", n_folds=5,
     p_valid: validation set fraction
     """
 
+    model = params['model']
+    
     num_humans = len(info_humans)
     num_bots = len(info_bots)
 
@@ -79,12 +81,18 @@ def predict_cv(info_humans, info_bots, plot_roc=False, model="ET", n_folds=5,
             # clf = RandomForestClassifier(n_estimators=n_estimators,
             # class_weight=None, max_features=None)
             # clf = AdaBoostClassifier(n_estimators=n_estimators, learning_rate=0.1)
-            clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
-                                       max_features=0.015, criterion='gini')
+
+            clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
+                                       n_jobs=params['n_jobs'],
+                                       max_features=params['max_features'],
+                                       criterion=params['criterion'],
+                                       verbose=params['verbose'],
+                                       random_state=0)
             clf.fit(X_train, y_train)
             y_test_proba = clf.predict_proba(X_test)
             y_test_pred = clf.predict(X_test)
             fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
+            roc_auc[n_cv] = auc(fpr, tpr)
             clf_score[n_cv] = clf.score(X_test, y_test)
 
         elif 'XGB' in model:
@@ -130,7 +138,9 @@ def predict_cv(info_humans, info_bots, plot_roc=False, model="ET", n_folds=5,
 
 
 def fit_and_predict(info_humans, info_bots, info_test,
-                    model="ET", params=None, p_use=None):
+                    params, p_use=None):
+
+    model = params['model']
 
     num_humans = len(info_humans)
     num_bots = len(info_bots)
@@ -183,8 +193,11 @@ def fit_and_predict(info_humans, info_bots, info_test,
         return y_pred[:, 1], y_train_pred[:, 1], 0, 0
         
     elif model == 'ET':
-        clf = ExtraTreesClassifier(n_estimators=n_estimators, n_jobs=-1,
-                                   max_features=0.015, criterion='gini',
+        clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
+                                   n_jobs=params['n_jobs'],
+                                   max_features=params['max_features'],
+                                   criterion=params['criterion'],
+                                   verbose=params['verbose'],
                                    random_state=0)
         clf.fit(X_train, y_train)
         importances = clf.feature_importances_
@@ -203,7 +216,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
         print list((features[indices]))[:40]
 
         # Plot the feature importances of the forest
-        if plot_importance:
+        if params['plot_importance']:
             plt.figure()
             plt.title("Feature importances")
             plt.bar(range(len(features)), importances[indices],

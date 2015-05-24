@@ -220,3 +220,32 @@ if __name__ == "__main__":
             info_test, bids_test, bid_timeframe=10.1)
         bid_streaks_test.to_csv(
             'data/bid_streaks_info_test.csv', index_label='bidder_id')
+        
+    elif 'combine' in argv[1]:
+
+        # combine two columns of the sametime info
+        nbsinfo_humans = pd.read_csv('data/num_bids_sametime_info_humans.csv',
+                                     index_col=0)
+        nbsinfo_bots = pd.read_csv('data/num_bids_sametime_info_bots.csv',
+                                   index_col=0)
+        nbsinfo_test = pd.read_csv('data/num_bids_sametime_info_test.csv',
+                                   index_col=0)
+
+        nbsinfo_humans = pd.concat([nbsinfo_humans, nbsinfo_humans['num_bids_sametime_sameauc']+nbsinfo_humans['num_bids_sametime_diffauc']], axis=1)
+        nbsinfo_humans.columns = [u'num_bids_sametime_sameauc',
+                                  u'num_bids_sametime_diffauc', 'num_bids_sametime']
+
+        nbsinfo_bots = pd.concat([nbsinfo_bots, nbsinfo_bots['num_bids_sametime_sameauc']+nbsinfo_bots['num_bids_sametime_diffauc']], axis=1)
+        nbsinfo_bots.columns = [u'num_bids_sametime_sameauc',
+                                  u'num_bids_sametime_diffauc', 'num_bids_sametime']
+
+        nbsinfo_test = pd.concat([nbsinfo_test, nbsinfo_test['num_bids_sametime_sameauc']+nbsinfo_test['num_bids_sametime_diffauc']], axis=1)
+        nbsinfo_test.columns = [u'num_bids_sametime_sameauc',
+                                  u'num_bids_sametime_diffauc', 'num_bids_sametime']
+
+        nbsinfo_humans.to_csv(
+            'data/num_bids_sametime_info_humans.csv', index_label='bidder_id')
+        nbsinfo_bots.to_csv(
+            'data/num_bids_sametime_info_bots.csv', index_label='bidder_id')
+        nbsinfo_test.to_csv(
+            'data/num_bids_sametime_info_test.csv', index_label='bidder_id')
