@@ -156,6 +156,37 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
+############################################################################
+# url data
+print "Adding url data"
+urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+
+keys_url = urlinfo_humans.keys()
+info_humans = append_info(info_humans, urlinfo_humans, keys_url)
+info_bots = append_info(info_bots, urlinfo_bots, keys_url)
+info_test = append_info(info_test, urlinfo_test, keys_url)
+
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
+
+############################################################################
+# bid counts for each period
+print "Adding bid count for each period data"
+bcepinfo_humans = pd.read_csv('data/info_humans_bp.csv', index_col=0)
+bcepinfo_bots = pd.read_csv('data/info_bots_bp.csv', index_col=0)
+bcepinfo_test = pd.read_csv('data/info_test_bp.csv', index_col=0)
+
+keys_bcep = bcepinfo_humans.keys()
+info_humans = append_info(info_humans, bcepinfo_humans, keys_bcep)
+info_bots = append_info(info_bots, bcepinfo_bots, keys_bcep)
+info_test = append_info(info_test, bcepinfo_test, keys_bcep)
+
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
 
 ############################################################################
 # Outlier dropping
@@ -187,43 +218,6 @@ else:
 info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
-=
-keys_basic = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
-              'num_urls', 'num_countries', 'num_merchs']
-
-keys_merchandises = ['computers', 'office equipment', 'auto parts', 'sporting goods',
-                     'books and music', 'clothing', 'furniture', 'jewelry', 'mobile',
-                     'home goods']
-
-keys_countries = ['ch', 'cn', 'ca', 'za', 'ec', 'ar', 'au', 'in', 'my', 'ru',
-                  'nl', 'no', 'tw', 'id', 'lv', 'lt', 'lu', 'th', 'fr', 'jp', 'bn',
-                  'de', 'bh', 'it', 'br', 'ph', 'sg', 'us', 'qa', 'kr', 'uk', 'bf',
-                  'sa', 'ua']
-
-keys_devices = ['phone136', 'phone640', 'phone739', 'phone150', 'phone15',
-                'phone33', 'phone1030', 'phone996', 'phone58', 'phone55',
-                'phone2287', 'phone205', 'phone224', 'phone90', 'phone3359',
-                'phone143', 'phone168', 'phone144', 'phone728', 'phone6',
-                'phone2330', 'phone28', 'phone25', 'phone1026', 'phone21',
-                'phone239', 'phone22', 'phone219', 'phone195', 'phone46', 'phone63',
-                'phone65', 'phone110', 'phone469']
-
-keys_bbaucs = ['bba_35', 'bba_33', 'bba_32', 'bba_31', 'bba_30', 'bba_19',
-               'bba_18', 'bba_15', 'bba_14', 'bba_17', 'bba_16', 'bba_11', 'bba_10',
-               'bba_13', 'bba_12', 'bba_28', 'bba_29', 'bba_20', 'bba_21', 'bba_22',
-               'bba_23', 'bba_24', 'bba_25', 'bba_26', 'bba_27', 'bba_9', 'bba_8',
-               'bba_5', 'bba_4', 'bba_7', 'bba_6', 'bba_1', 'bba_3', 'bba_2']
-
-keys_bintervals = ['int_0', 'int_1', 'int_2', 'int_3', 'int_4',
-                   'int_5', 'int_6', 'int_7', 'int_8', 'int_9', 'int_10']
-
-keys_nbs = ['num_bids_sametime_sameauc', 'num_bids_sametime_diffauc']
-
-keys_bstr = ['streak_0', 'streak_1', 'streak_2', 'streak_3',
-             'streak_4', 'streak_5', 'streak_6', 'streak_7', 'streak_8', 'streak_9']
-
-# keys_use = keys_basic[:-1] + keys_merchandises + keys_countries + \
-#     keys_devices + keys_bbaucs + keys_bintervals + keys_nbs + keys_bstr
 
 keys_use = keys_all
 
@@ -232,6 +226,9 @@ info_humans = info_humans[keys_use]
 info_bots = info_bots[keys_use]
 info_test = info_test[keys_use]
 
+############################################################################
+# optimizer
+############################################################################
 
 def xgb_objective(params):
     print params
@@ -278,15 +275,15 @@ def xgb_objective(params):
         map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
     ind_max = np.argmax(np.array(
         map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
-    std_max = float(cv_result[ind_max].aplit('\t')[1].split(':')[1].split('+')[1])
+    std_max = float(cv_result[ind_max].split('\t')[1].split(':')[1].split('+')[1])
 
     # logging
-    with open('log_results.txt', 'a') as f:
+    with open('log_results_1.txt', 'a') as f:
         f.write(str({'loss': auc_max, 'std': std_max,'status':
                      STATUS_OK, 'ind': ind_max}))
         f.write('\n')
 
-    with open('log_params.txt', 'a') as f:
+    with open('log_params_1.txt', 'a') as f:
         f.write(str(params))
         f.write('\n')
     
@@ -310,9 +307,9 @@ def optimize(trials):
                 algo=tpe.suggest, trials=trials, max_evals=100)
 
     # logging
-    with open('trials_results.txt', 'w') as f:
+    with open('trials_results_1.txt', 'w') as f:
         json.dump(trials.results, f)
-    with open('trials_trials.txt', 'w') as f:
+    with open('trials_trials_1.txt', 'w') as f:
         json.dump(trials.trials, f)
 
     print best

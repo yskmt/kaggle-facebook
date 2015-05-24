@@ -61,7 +61,6 @@ cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
 cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
 cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
-# cts_appended = keys_sig + keys_na
 cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
 info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
 info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
