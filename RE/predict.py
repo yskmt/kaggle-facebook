@@ -160,6 +160,38 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
+############################################################################
+# url data
+print "Adding url data"
+urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+
+keys_url = urlinfo_humans.keys()
+info_humans = append_info(info_humans, urlinfo_humans, keys_url)
+info_bots = append_info(info_bots, urlinfo_bots, keys_url)
+info_test = append_info(info_test, urlinfo_test, keys_url)
+
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
+
+############################################################################
+# bid counts for each period
+print "Adding bid count for each period data"
+bcepinfo_humans = pd.read_csv('data/info_humans_bp.csv', index_col=0)
+bcepinfo_bots = pd.read_csv('data/info_bots_bp.csv', index_col=0)
+bcepinfo_test = pd.read_csv('data/info_test_bp.csv', index_col=0)
+
+keys_bcep = bcepinfo_humans.keys()
+info_humans = append_info(info_humans, bcepinfo_humans, keys_bcep)
+info_bots = append_info(info_bots, bcepinfo_bots, keys_bcep)
+info_test = append_info(info_test, bcepinfo_test, keys_bcep)
+
+info_humans.fillna(0, inplace=True)
+info_bots.fillna(0, inplace=True)
+info_test.fillna(0, inplace=True)
+
 
 ############################################################################
 # Outlier dropping
@@ -192,95 +224,7 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-# features selection by chi2 test
-# num_features = 40
-# indx_ex, ft_ex = select_k_best_features(num_features, info_humans, info_bots)
-# keys_use = ft_ex
-
-# 40 out of 7495 features globally
-# by chi2 test
-# keys_use = ['au', 'bba_1', 'bba_2', 'bba_3', 'num_bids', 'num_ips',
-#             'phone1029', 'phone113', 'phone115', 'phone118',
-#             'phone119', 'phone1211', 'phone122', 'phone13',
-#             'phone143', 'phone157', 'phone17', 'phone201', 'phone204',
-#             'phone237', 'phone248', 'phone278', 'phone28', 'phone290',
-#             'phone322', 'phone346', 'phone386', 'phone389',
-#             'phone391', 'phone46', 'phone466', 'phone479', 'phone503',
-#             'phone524', 'phone528', 'phone56', 'phone62', 'phone718',
-#             'phone796', 'th']
-
-# # by using extratrees clf globally
-# keys_use = ['bba_5', 'bba_4', 'bba_3', 'phone46', 'num_bids', 'bba_6', 'bba_8',
-#             'bba_2', 'bba_1', 'bba_7', 'au', 'bba_10', 'bba_9', 'bba_12',
-#             'bba_14', 'phone195', 'bba_11', 'num_aucs', 'bba_13', 'phone143',
-#             'bba_15', 'phone63', 'bba_16', 'num_ips', 'bba_20', 'bba_17',
-#             'bba_18', 'phone55', 'num_urls', 'phone1030', 'num_countries',
-#             'phone150', 'phone144', 'bba_21', 'num_devices', 'phone33', 'bba_19',
-#             'bba_22', 'phone1026', 'bba_24']
-# keys_use = keys_use[:31]
-
-# # # 10*4 features selected from each category by chi2
-# keys_use1 = ['phone115', 'phone119', 'phone122', 'phone13', 'phone17',
-#             'phone237', 'phone389', 'phone46', 'phone62', 'phone718',
-#             'at', 'au', 'ca', 'de', 'in', 'jp', 'kr', 'ru', 'th',
-#             'us', 'bba_1', 'bba_14', 'bba_2', 'bba_3', 'bba_4',
-#             'bba_5', 'bba_6', 'bba_7', 'bba_8', 'bba_9', 'computers',
-#             'jewelry', 'mobile', 'num_aucs', 'num_bids',
-#             'num_countries', 'num_devices', 'num_ips', 'num_urls',
-#             'sporting goods']
-
-# # 10*4 features selected from each category by ET
-# keys_use2 = ['au', 'num_bids', 'za', 'phone55', 'phone739',
-#             'num_devices', 'ca', 'my', 'num_ips', 'num_aucs',
-#             'num_urls', 'phone996', 'phone150', 'phone640', 'bba_14',
-#             'bba_15', 'num_countries', 'phone136', 'in', 'phone33',
-#             'cn', 'bba_17', 'ch', 'ru', 'ar', 'bba_19', 'bba_18',
-#             'phone58', 'bba_30', 'phone1030', 'bba_31', 'bba_33',
-#             'phone15', 'bba_32', 'bba_35', 'ec']
-
-# keys_use = list(set(keys_use1).union(keys_use2))
-
-keys_basic = ['num_bids', 'num_aucs', 'num_ips', 'num_devices',
-              'num_urls', 'num_countries', 'num_merchs']
-
-keys_merchandises = ['computers', 'office equipment', 'auto parts', 'sporting goods',
-                     'books and music', 'clothing', 'furniture', 'jewelry', 'mobile',
-                     'home goods']
-
-keys_countries = ['ch', 'cn', 'ca', 'za', 'ec', 'ar', 'au', 'in', 'my', 'ru',
-                  'nl', 'no', 'tw', 'id', 'lv', 'lt', 'lu', 'th', 'fr', 'jp', 'bn',
-                  'de', 'bh', 'it', 'br', 'ph', 'sg', 'us', 'qa', 'kr', 'uk', 'bf',
-                  'sa', 'ua']
-
-keys_devices = ['phone136', 'phone640', 'phone739', 'phone150', 'phone15',
-                'phone33', 'phone1030', 'phone996', 'phone58', 'phone55',
-                'phone2287', 'phone205', 'phone224', 'phone90', 'phone3359',
-                'phone143', 'phone168', 'phone144', 'phone728', 'phone6',
-                'phone2330', 'phone28', 'phone25', 'phone1026', 'phone21',
-                'phone239', 'phone22', 'phone219', 'phone195', 'phone46', 'phone63',
-                'phone65', 'phone110', 'phone469']
-
-keys_bbaucs = ['bba_35', 'bba_33', 'bba_32', 'bba_31', 'bba_30', 'bba_19',
-               'bba_18', 'bba_15', 'bba_14', 'bba_17', 'bba_16', 'bba_11', 'bba_10',
-               'bba_13', 'bba_12', 'bba_28', 'bba_29', 'bba_20', 'bba_21', 'bba_22',
-               'bba_23', 'bba_24', 'bba_25', 'bba_26', 'bba_27', 'bba_9', 'bba_8',
-               'bba_5', 'bba_4', 'bba_7', 'bba_6', 'bba_1', 'bba_3', 'bba_2']
-
-# keys_bbaucs = ['bba_' + str(i) for i in range(1, 6)]
-
-keys_bintervals = ['int_0', 'int_1', 'int_2', 'int_3', 'int_4',
-                   'int_5', 'int_6', 'int_7', 'int_8', 'int_9', 'int_10']
-
-keys_nbs = ['num_bids_sametime_sameauc', 'num_bids_sametime_diffauc']
-
-keys_bstr = ['streak_0', 'streak_1', 'streak_2', 'streak_3',
-             'streak_4', 'streak_5', 'streak_6', 'streak_7', 'streak_8', 'streak_9']
-
-keys_use = keys_basic[:-1] + keys_merchandises + keys_countries + \
-    keys_devices + keys_bbaucs + keys_bintervals + keys_nbs + keys_bstr
-
 keys_use = keys_all
-# keys_use = keys_use[:30]
 
 print "Extracting keys..."
 info_humans = info_humans[keys_use]
@@ -305,30 +249,30 @@ info_test = info_test[keys_use]
 ############################################################################
 # print "K-fold CV..."
 
-roc_auc = []
-roc_auc_std = []
-clf_score = []
+# roc_auc = []
+# roc_auc_std = []
+# clf_score = []
 
-num_cv = 5
-for i in range(num_cv):
-    clf, ra, cs \
-        = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=2000, plot_roc=False, model='XGB')
+# num_cv = 5
+# for i in range(num_cv):
+#     clf, ra, cs \
+#         = predict_cv(info_humans, info_bots, n_folds=5,
+#                      n_estimators=2000, plot_roc=False, model='XGB')
 
-    print ra.mean(), ra.std()
-    # print cs.mean(), cs.std()
+#     print ra.mean(), ra.std()
+#     # print cs.mean(), cs.std()
 
-    roc_auc.append(ra.mean())
-    roc_auc_std.append(ra.std())
-    # clf_score.append(cs.mean())
+#     roc_auc.append(ra.mean())
+#     roc_auc_std.append(ra.std())
+#     # clf_score.append(cs.mean())
 
-roc_auc = np.array(roc_auc)
-roc_auc_std = np.array(roc_auc_std)
-# clf_score = np.array(clf_score)
+# roc_auc = np.array(roc_auc)
+# roc_auc_std = np.array(roc_auc_std)
+# # clf_score = np.array(clf_score)
 
-print ""
-print roc_auc.mean(), roc_auc_std.mean()
-# print clf_score.mean(), clf_score.std()
+# print ""
+# print roc_auc.mean(), roc_auc_std.mean()
+# # print clf_score.mean(), clf_score.std()
 
 
 ############################################################################
@@ -336,7 +280,7 @@ print roc_auc.mean(), roc_auc_std.mean()
 ############################################################################
 
 y_test_proba, y_train_proba, cvr, feature_importance\
-    = fit_and_predict(info_humans, info_bots, info_test, model='XGB',
+    = fit_and_predict(info_humans, info_bots, info_test, model='XGB_CV',
                       n_estimators=2000, p_use=None, plot_importance=False)
 
 try:
