@@ -14,7 +14,7 @@ from sklearn.feature_selection import chi2, SelectKBest
 import numpy as np
 import pandas as pd
 
-from fb_funcs import (predict_usample, append_merchandise, predict_cv,
+from fb_funcs import (append_merchandise, predict_cv,
                       fit_and_predict,
                       append_countries, keys_sig, keys_na,
                       append_bba, append_device, append_bids_intervals)

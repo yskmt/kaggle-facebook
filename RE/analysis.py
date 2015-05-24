@@ -7,10 +7,11 @@ author: Yusuke Sakamoto
 
 """
 
-import numpy as np
 import pandas as pd
 
-from fb_funcs import gather_info, gather_country_info, gather_auc_bids_info, gather_device_info
+from analysis_funcs import (gather_info, gather_country_info,
+                            gather_auc_bids_info, gather_device_info,
+                            gather_count_info)
 
 # set(bids_test['merchandise'].unique())\
 #     .union(set(bids_humans['merchandise'].unique()))\
@@ -70,21 +71,47 @@ bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
 # Gathering device counts information
 ############################################################################
 
-print "Analyzing device huaman data..."
-dinfo_humans = gather_device_info(bids_humans)
-dinfo_humans.to_csv('data/device_info_humans.csv')
+# print "Analyzing device huaman data..."
+# dinfo_humans = gather_device_info(bids_humans)
+# dinfo_humans.to_csv('data/device_info_humans.csv')
 
-print "Analyzing device huaman data..."
-dinfo_bots = gather_device_info(bids_bots)
-dinfo_bots.to_csv('data/device_info_bots.csv')
+# print "Analyzing device huaman data..."
+# dinfo_bots = gather_device_info(bids_bots)
+# dinfo_bots.to_csv('data/device_info_bots.csv')
 
-print "Analyzing device huaman data..."
-dinfo_test = gather_device_info(bids_test)
-dinfo_test.to_csv('data/device_info_test.csv')
+# print "Analyzing device huaman data..."
+# dinfo_test = gather_device_info(bids_test)
+# dinfo_test.to_csv('data/device_info_test.csv')
 
-dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
-dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
-dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
+# dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
+# dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
+# dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
+
+
+############################################################################
+# Gathering url counts information
+############################################################################
+
+# because there are too many urls, just check the ones occured for
+# both humans and bots
+url_list = list(set(bids_bots['url'].unique()).intersection(bids_humans['url'].unique()))
+
+print "Analyzing url bots data..."
+uinfo_bots = gather_count_info(bids_bots, 'url', item_list=url_list)
+uinfo_bots.to_csv('data/url_info_bots.csv')
+
+print "Analyzing url huaman data..."
+uinfo_humans = gather_count_info(bids_humans, 'url', item_list=url_list)
+uinfo_humans.to_csv('data/url_info_humans.csv')
+
+print "Analyzing url test data..."
+uinfo_test = gather_count_info(bids_test, 'url', item_list=url_list)
+uinfo_test.to_csv('data/url_info_test.csv')
+
+# uinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+# uinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+# uinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+
 
 ############################################################################
 # Gathering bids-by-aucs counts information

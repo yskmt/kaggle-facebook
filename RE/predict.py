@@ -279,7 +279,7 @@ keys_bstr = ['streak_0', 'streak_1', 'streak_2', 'streak_3',
 keys_use = keys_basic[:-1] + keys_merchandises + keys_countries + \
     keys_devices + keys_bbaucs + keys_bintervals + keys_nbs + keys_bstr
 
-# keys_use = keys_all
+keys_use = keys_all
 # keys_use = keys_use[:30]
 
 print "Extracting keys..."
@@ -305,30 +305,30 @@ info_test = info_test[keys_use]
 ############################################################################
 # print "K-fold CV..."
 
-roc_auc = []
-roc_auc_std = []
-clf_score = []
+# roc_auc = []
+# roc_auc_std = []
+# clf_score = []
 
-num_cv = 5
-for i in range(num_cv):
-    clf, ra, cs \
-        = predict_cv(info_humans, info_bots, n_folds=5,
-                     n_estimators=2000, plot_roc=False, model='XGB')
+# num_cv = 5
+# for i in range(num_cv):
+#     clf, ra, cs \
+#         = predict_cv(info_humans, info_bots, n_folds=5,
+#                      n_estimators=2000, plot_roc=False, model='XGB')
 
-    print ra.mean(), ra.std()
-    # print cs.mean(), cs.std()
+#     print ra.mean(), ra.std()
+#     # print cs.mean(), cs.std()
 
-    roc_auc.append(ra.mean())
-    roc_auc_std.append(ra.std())
-    # clf_score.append(cs.mean())
+#     roc_auc.append(ra.mean())
+#     roc_auc_std.append(ra.std())
+#     # clf_score.append(cs.mean())
 
-roc_auc = np.array(roc_auc)
-roc_auc_std = np.array(roc_auc_std)
-# clf_score = np.array(clf_score)
+# roc_auc = np.array(roc_auc)
+# roc_auc_std = np.array(roc_auc_std)
+# # clf_score = np.array(clf_score)
 
-print ""
-print roc_auc.mean(), roc_auc_std.mean()
-# print clf_score.mean(), clf_score.std()
+# print ""
+# print roc_auc.mean(), roc_auc_std.mean()
+# # print clf_score.mean(), clf_score.std()
 
 
 ############################################################################
@@ -337,7 +337,7 @@ print roc_auc.mean(), roc_auc_std.mean()
 
 y_test_proba, y_train_proba, cvr, feature_importance\
     = fit_and_predict(info_humans, info_bots, info_test, model='XGB',
-                      n_estimators=2000, p_use=None, plot_importance=False)
+                      n_estimators=2500, p_use=None, plot_importance=False)
 
 try:
     auc_max = np.max(np.array(map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cvr)))
@@ -367,19 +367,3 @@ submission.to_csv('data/submission.csv', columns=['prediction'],
                   index_label='bidder_id')
 
 
-# #  second method
-# test_ids = info_test.index
-# test_ids_all = pd.read_csv('data/test.csv')['bidder_id']
-# test_ids_append = list(
-#     set(test_ids_all.values).difference(set(test_ids.values)))
-# submission_append = pd.DataFrame(np.zeros(len(test_ids_append)),
-# index=test_ids_append, columns=['prediction'])
-
-# # Make as submission file!
-# submission = pd.DataFrame(y_test_proba, index=test_ids,
-#                           columns=['prediction'])
-# submission = pd.concat([submission, submission_append], axis=0)
-# submission.to_csv('data/submission.csv', index_label='bidder_id')
-
-# end_time = time.time()
-# print "Time elapsed: %.2f" % (end_time - start_time)
