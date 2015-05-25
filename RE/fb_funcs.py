@@ -1,3 +1,13 @@
+"""
+fb_funcs.py
+
+Facebook Recruiting IV: Human or Robot?
+
+author: Yusuke Sakamoto
+
+"""
+
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,6 +21,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn import svm
+from sklearn.linear_model import LogisticRegression
 
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -114,13 +125,18 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
 
             elif "SVC" in model:
                 clf = svm.SVC(probability=True)
-                # clf = SGDClassifier(loss='log')
-                # clf = DecisionTreeClassifier()
-                # clf = KNeighborsClassifier()
-                # clf = RandomForestClassifier(n_estimators=n_estimators,
-                # class_weight=None, max_features=None)
-                # clf = AdaBoostClassifier(n_estimators=n_estimators, learning_rate=0.1)
 
+            elif "logistic" in model:
+                clf = LogisticRegression()
+
+            elif "RF" in model:
+                clf = RandomForestClassifier(n_estimators=params['n_estimators'],
+                                           n_jobs=params['n_jobs'],
+                                           max_features=params['max_features'],
+                                           criterion=params['criterion'],
+                                             verbose=params['verbose'],
+                                             max_depth=params['max_depth'])
+                
             clf.fit(X_train, y_train)
             y_test_proba = clf.predict_proba(X_test)
             y_test_pred = clf.predict(X_test)
@@ -222,12 +238,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
             return y_pred, y_train_pred, y_train, 0
 
     else:
-        if model == 'RF':
-            # randomforest!
-            clf = RandomForestClassifier(n_estimators=n_estimators, verbose=1)
-            clf.fit(X_train, y_train)
-
-        elif model == 'KN':
+        if model == 'KN':
             clf = KNeighborsClassifier()
             clf.fit(X_train, y_train)
 
@@ -235,6 +246,19 @@ def fit_and_predict(info_humans, info_bots, info_test,
             clf = svm.SVC(probability=True)
             clf.fit(X_train, y_train)
 
+        elif "logistic" in model:
+            clf = LogisticRegression()
+            clf.fit(X_train, y_train)
+
+        elif "RF" in model:
+            clf = RandomForestClassifier(n_estimators=params['n_estimators'],
+                                         n_jobs=params['n_jobs'],
+                                         max_features=params['max_features'],
+                                         criterion=params['criterion'],
+                                         verbose=params['verbose'],
+                                         max_depth=params['max_depth'])
+            clf.fit(X_train, y_train)
+            
         elif model == 'ET':
             clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
                                        n_jobs=params['n_jobs'],
@@ -244,18 +268,20 @@ def fit_and_predict(info_humans, info_bots, info_test,
                                        random_state=0)
             clf.fit(X_train, y_train)
 
+        if (model == 'ET') or (model == 'RF'):
+            
             importances = clf.feature_importances_
             std = np.std([tree.feature_importances_ for tree in clf.estimators_],
                          axis=0)
             indices = np.argsort(importances)[::-1]
+
             # Print the feature ranking
             print("Feature ranking:")
-
             for f in range(min(len(features), 40)):
                 print("%d. feature %d: %s = (%f)"
                       % (f, indices[f], features[indices[f]], importances[indices[f]]))
 
-                print list((features[indices]))[:40]
+            print list((features[indices]))[:40]
 
             # Plot the feature importances of the forest
             if params['plot_importance']:
