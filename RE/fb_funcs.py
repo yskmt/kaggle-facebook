@@ -58,24 +58,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
 
     model = params['model']
     
-    num_humans = len(info_humans)
-    num_bots = len(info_bots)
-
-    # combine humans and bots data to create given data
-    info_given = pd.concat([info_humans, info_bots], axis=0)
-    labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
-    num_given = len(labels_train)
-    
-    # shuffle just in case
-    index_sh = np.random.choice(num_given, num_given, replace=False)
-    info_given = info_given.iloc[index_sh]
-    labels_train = labels_train[index_sh]
-
-    # get matrices forms
-    X = info_given.sort(axis=1).as_matrix()
-    X = StandardScaler().fit_transform(X)
-    y = labels_train
-    features = info_given.sort(axis=1).keys()
+    X, y, features = get_Xy(info_humans, info_bots)
 
     # split for cv
     kf = cross_validation.StratifiedKFold(
@@ -447,3 +430,137 @@ def append_info(info, info_new, keys_appended):
     info = pd.concat(info_appended, axis=1)
 
     return info
+
+
+def get_Xy(info_humans, info_bots):    
+    num_humans = len(info_humans)
+    num_bots = len(info_bots)
+
+    # combine humans and bots data to create given data
+    info_given = pd.concat([info_humans, info_bots], axis=0)
+    labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
+    num_given = len(labels_train)
+    
+    # shuffle just in case
+    index_sh = np.random.choice(num_given, num_given, replace=False)
+    info_given = info_given.iloc[index_sh]
+    labels_train = labels_train[index_sh]
+
+    # get matrices forms
+    X = info_given.sort(axis=1).as_matrix()
+    X = StandardScaler().fit_transform(X)
+    y = labels_train
+    features = info_given.sort(axis=1).keys()
+
+    return X, y, features
+
+def predict_cv_ens(info_humans, info_bots, params_0, params_1,
+                   n_folds=5):
+    """
+    prediction by ensemble
+
+    p_valid: validation set fraction
+    """
+
+    X, y, features = get_Xy(info_humans, info_bots)
+    
+    # split for cv
+    kf = cross_validation.StratifiedKFold(
+        y, n_folds=n_folds, shuffle=True, random_state=None)
+
+    # cv scores
+    roc_auc = np.zeros(n_folds)
+    roc_auc_0 = np.zeros(n_folds)
+    roc_auc_1 = np.zeros(n_folds)
+
+    n_cv = 0
+    for train_index, test_index in kf:
+        print "CV#: ", n_cv
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        # XGBoost
+        dtrain = xgb.DMatrix(X_train, label=y_train)
+        xgb_params = {"objective": "binary:logistic",
+                      'eta': params_0['eta'],
+                      'gamma': params_0['gamma'],
+                      'max_depth': params_0['max_depth'],
+                      'min_child_weight': params_0['min_child_weight'],
+                      'subsample': params_0['subsample'],
+                      'colsample_bytree': params_0['colsample_bytree'],
+                      'nthread': params_0['nthread'],
+                      'silent': params_0['silent']}
+        num_rounds = int(params_0['num_rounds'])
+
+        evallist = [(dtrain, 'train')]
+        bst = xgb.train(xgb_params, dtrain, num_rounds, evallist)
+        dtest = xgb.DMatrix(X_test)
+        y_test_proba_0 = bst.predict(dtest)
+
+        # extratree
+        clf = ExtraTreesClassifier(n_estimators=params_1['n_estimators'],
+                                   n_jobs=params_1['n_jobs'],
+                                   max_features=params_1['max_features'],
+                                   criterion=params_1['criterion'],
+                                   verbose=params_1['verbose'],
+                                   random_state=None)
+                
+        clf.fit(X_train, y_train)
+        y_test_proba_1 = clf.predict_proba(X_test)[:,1]
+
+        # ensemble!
+        y_test_proba = (y_test_proba_0 + y_test_proba_1) / 2.0
+
+        # validation errors
+
+        fpr_0, tpr_0, thresholds_0 = roc_curve(y_test, y_test_proba_0)
+        roc_auc_0[n_cv] = auc(fpr_0, tpr_0)
+        fpr_1, tpr_1, thresholds_1 = roc_curve(y_test, y_test_proba_1)
+        roc_auc_1[n_cv] = auc(fpr_1, tpr_1)
+        
+        fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
+        roc_auc[n_cv] = auc(fpr, tpr)
+        
+        n_cv += 1
+
+    return roc_auc, roc_auc_0, roc_auc_1
+
+
+def kfcv_ens(info_humans, info_bots, params_0, params_1,
+             num_cv=5, num_folds=5):
+    """
+    k-fold cross validation
+    """
+
+    roc_auc = []
+    roc_auc_std = []
+
+    roc_auc_0 = []
+    roc_auc_std_0 = []
+    roc_auc_1 = []
+    roc_auc_std_1 = []
+    
+    for i in range(num_cv):
+        ra, ra_0, ra_1 \
+            = predict_cv_ens(info_humans, info_bots, params_0, params_1,
+                             n_folds=num_folds)
+
+        print ra.mean(), ra.std()
+        roc_auc.append(ra.mean())
+        roc_auc_std.append(ra.std())
+
+        roc_auc_0.append(ra_0.mean())
+        roc_auc_std_0.append(ra_0.std())
+        roc_auc_1.append(ra_1.mean())
+        roc_auc_std_1.append(ra_1.std())
+
+    roc_auc = np.array(roc_auc)
+    roc_auc_std = np.array(roc_auc_std)
+
+    roc_auc_0 = np.array(roc_auc_0)
+    roc_auc_std_0 = np.array(roc_auc_std_0)
+    roc_auc_1 = np.array(roc_auc_1)
+    roc_auc_std_1 = np.array(roc_auc_std_1)
+    
+    return [roc_auc.mean(), roc_auc_std.mean(), roc_auc_0.mean(),
+            roc_auc_std_0.mean(), roc_auc_1.mean(), roc_auc_std_1.mean()]
