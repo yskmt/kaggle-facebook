@@ -281,9 +281,9 @@ elif 'resume' in argv[1]:
     ############################################################################
 
     print "loading preprocessed data..."
-    info_humans = pd.read_csv('data/info_humans_pp11.csv', index_col=0)
-    info_bots = pd.read_csv('data/info_bots_pp11.csv', index_col=0)
-    info_test = pd.read_csv('data/info_test_pp11.csv', index_col=0)
+    info_humans = pd.read_csv('data/info_humans_pp9.csv', index_col=0)
+    info_bots = pd.read_csv('data/info_bots_pp9.csv', index_col=0)
+    info_test = pd.read_csv('data/info_test_pp9.csv', index_col=0)
 
 else:
     sys.exit(1)
@@ -292,9 +292,9 @@ else:
 # k-fold Cross Validaton
 ############################################################################
 # params for xgb
-# params = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
-#           'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
-#           'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 1.0}
+params = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
+          'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
+          'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 1.0}
 
 # params for et
 # params = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
@@ -310,9 +310,9 @@ else:
 #           'n_jobs': 2}
 
 # params for RF
-params = {'model': 'RF', 'n_estimators': 3000, 'max_features': 'auto',
-          'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-          'n_jobs': -1, 'max_depth': 3}
+# params = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
+#           'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
+#           'n_jobs': -1, 'max_depth': 3}
 
 roc_auc_mean, roc_auc_std \
     = ffs.kfcv(info_humans, info_bots, params, num_cv=5, num_folds=5)

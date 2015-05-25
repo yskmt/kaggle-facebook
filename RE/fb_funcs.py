@@ -57,7 +57,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
     """
 
     model = params['model']
-
+    
     num_humans = len(info_humans)
     num_bots = len(info_bots)
 
@@ -65,7 +65,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
     info_given = pd.concat([info_humans, info_bots], axis=0)
     labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
     num_given = len(labels_train)
-
+    
     # shuffle just in case
     index_sh = np.random.choice(num_given, num_given, replace=False)
     info_given = info_given.iloc[index_sh]
@@ -75,6 +75,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
     X = info_given.sort(axis=1).as_matrix()
     X = StandardScaler().fit_transform(X)
     y = labels_train
+    features = info_given.sort(axis=1).keys()
 
     # split for cv
     kf = cross_validation.StratifiedKFold(
@@ -144,6 +145,21 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
             roc_auc[n_cv] = auc(fpr, tpr)
             clf_score[n_cv] = clf.score(X_test, y_test)
 
+            if "RF" in model:
+                importances = clf.feature_importances_
+                std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+                             axis=0)
+                indices = np.argsort(importances)[::-1]
+
+                # Print the feature ranking
+                print("Feature ranking:")
+                for f in range(min(len(features), 40)):
+                    print("%d. feature %d: %s = (%f)"
+                          % (f, indices[f], features[indices[f]], importances[indices[f]]))
+
+                print list((features[indices]))[:40]
+
+            
         if plot_roc:
             # Plot ROC curve
             # plt.clf()
