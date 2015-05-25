@@ -253,14 +253,20 @@ else:
 # k-fold Cross Validaton
 ############################################################################
 # params for xgb
-params = {'model': 'XGB_CV', 'colsample_bytree': 0.367, 'silent': 1,
-          'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
-          'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 1.0}
+# params = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
+#           'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
+#           'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 1.0}
 
 # params for et
-params = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
+# params = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
+#           'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
+#           'n_jobs': 2}
+
+# params for svc
+params = {'model': 'SVC', 'n_estimators': 3000, 'max_features': 'auto',
           'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
           'n_jobs': 2}
+
 
 print "K-fold CV..."
 
@@ -268,10 +274,10 @@ roc_auc = []
 roc_auc_std = []
 clf_score = []
 
-num_cv = 10
+num_cv = 5
 for i in range(num_cv):
     clf, ra, cs \
-        = predict_cv(info_humans, info_bots, n_folds=5,
+        = predict_cv(info_humans, info_bots, n_folds=10,
                      params=params)
 
     print ra.mean(), ra.std()

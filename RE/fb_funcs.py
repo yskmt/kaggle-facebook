@@ -3,11 +3,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pdb import set_trace
 
+from sklearn.preprocessing import StandardScaler
+
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn import svm
 
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -33,6 +36,7 @@ keys_sig = ['ar', 'au', 'bd', 'dj', 'ga', 'gq', 'id', 'mc', 'ml',
 keys_na = ['an', 'aw', 'bi', 'cf', 'er', 'gi', 'gn', 'gp', 'mh', 'nc',
            'sb', 'tc', 'vi', 'ws']
 
+
 def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
                params=None):
     """
@@ -42,7 +46,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
     """
 
     model = params['model']
-    
+
     num_humans = len(info_humans)
     num_bots = len(info_bots)
 
@@ -58,6 +62,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
 
     # get matrices forms
     X = info_given.sort(axis=1).as_matrix()
+    X = StandardScaler().fit_transform(X)
     y = labels_train
 
     # split for cv
@@ -74,28 +79,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        if "ET" in model:
-            # clf = SGDClassifier(loss='log')
-            # clf = DecisionTreeClassifier()
-            # clf = KNeighborsClassifier()
-            # clf = RandomForestClassifier(n_estimators=n_estimators,
-            # class_weight=None, max_features=None)
-            # clf = AdaBoostClassifier(n_estimators=n_estimators, learning_rate=0.1)
-
-            clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
-                                       n_jobs=params['n_jobs'],
-                                       max_features=params['max_features'],
-                                       criterion=params['criterion'],
-                                       verbose=params['verbose'],
-                                       random_state=0)
-            clf.fit(X_train, y_train)
-            y_test_proba = clf.predict_proba(X_test)
-            y_test_pred = clf.predict(X_test)
-            fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
-            roc_auc[n_cv] = auc(fpr, tpr)
-            clf_score[n_cv] = clf.score(X_test, y_test)
-
-        elif 'XGB' in model:
+        if 'XGB' in model:
             # XGBoost
             dtrain = xgb.DMatrix(X_train, label=y_train)
             xgb_params = {"objective": "binary:logistic",
@@ -117,7 +101,33 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
             roc_auc[n_cv] = auc(fpr, tpr)
             clf_score[n_cv] = 0.0
             clf = 0
-            
+
+        else:
+            if "ET" in model:
+
+                clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
+                                           n_jobs=params['n_jobs'],
+                                           max_features=params['max_features'],
+                                           criterion=params['criterion'],
+                                           verbose=params['verbose'],
+                                           random_state=0)
+
+            elif "SVC" in model:
+                clf = svm.SVC(probability=True)
+                # clf = SGDClassifier(loss='log')
+                # clf = DecisionTreeClassifier()
+                # clf = KNeighborsClassifier()
+                # clf = RandomForestClassifier(n_estimators=n_estimators,
+                # class_weight=None, max_features=None)
+                # clf = AdaBoostClassifier(n_estimators=n_estimators, learning_rate=0.1)
+
+            clf.fit(X_train, y_train)
+            y_test_proba = clf.predict_proba(X_test)
+            y_test_pred = clf.predict(X_test)
+            fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
+            roc_auc[n_cv] = auc(fpr, tpr)
+            clf_score[n_cv] = clf.score(X_test, y_test)
+
         if plot_roc:
             # Plot ROC curve
             # plt.clf()
@@ -175,61 +185,15 @@ def fit_and_predict(info_humans, info_bots, info_test,
     y_train = labels_train
     X_test = info_test.sort(axis=1).as_matrix()
 
+    # scale
+    scaler = StandardScaler()
+    scaler.fit(X_train)
+    X_train = scaler.transform(X_train)
+    X_test = scaler.transform(X_test)
+
     features = info_given.sort(axis=1).keys()
 
-    if model == 'RF':
-        # randomforest!
-        clf = RandomForestClassifier(n_estimators=n_estimators, verbose=1)
-        clf.fit(X_train, y_train)
-        y_pred = clf.predict_proba(X_test)
-        y_train_pred = clf.predict_proba(X_train)
-        return y_pred[:, 1], y_train_pred[:, 1], 0
-
-    elif model == 'KN':
-        clf = KNeighborsClassifier()
-        clf.fit(X_train, y_train)
-        y_pred = clf.predict_proba(X_test)
-        y_train_pred = clf.predict_proba(X_train)
-        return y_pred[:, 1], y_train_pred[:, 1], 0, 0
-        
-    elif model == 'ET':
-        clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
-                                   n_jobs=params['n_jobs'],
-                                   max_features=params['max_features'],
-                                   criterion=params['criterion'],
-                                   verbose=params['verbose'],
-                                   random_state=0)
-        clf.fit(X_train, y_train)
-        importances = clf.feature_importances_
-
-        std = np.std([tree.feature_importances_ for tree in clf.estimators_],
-                     axis=0)
-        indices = np.argsort(importances)[::-1]
-
-        # Print the feature ranking
-        print("Feature ranking:")
-
-        for f in range(min(len(features), 40)):
-            print("%d. feature %d: %s = (%f)"
-                  % (f, indices[f], features[indices[f]], importances[indices[f]]))
-
-        print list((features[indices]))[:40]
-
-        # Plot the feature importances of the forest
-        if params['plot_importance']:
-            plt.figure()
-            plt.title("Feature importances")
-            plt.bar(range(len(features)), importances[indices],
-                    color="r", yerr=std[indices], align="center")
-            plt.xticks(range(len(features)), features[indices])
-            plt.xlim([-1, len(features)])
-            plt.show()
-
-        y_pred = clf.predict_proba(X_test)
-        y_train_pred = clf.predict_proba(X_train)
-
-        return y_pred[:, 1], y_train_pred[:, 1], 0, list((features[indices]))
-    elif "XGB" in model:
+    if "XGB" in model:
         xgb_params = {"objective": "binary:logistic",
                       'eta': params['eta'],
                       'gamma': params['gamma'],
@@ -240,11 +204,11 @@ def fit_and_predict(info_humans, info_bots, info_test,
                       'nthread': params['nthread'],
                       'silent': params['silent']}
         num_rounds = int(params['num_rounds'])
-        
+
         dtrain = xgb.DMatrix(X_train, label=y_train)
 
         if "CV" in model:
-            cv=5
+            cv = 5
             cv_result = xgb.cv(xgb_params, dtrain, num_rounds, nfold=cv,
                                metrics={'rmse', 'error', 'auc'}, seed=0)
             return 0, 0, cv_result, 0
@@ -256,6 +220,62 @@ def fit_and_predict(info_humans, info_bots, info_test,
             y_train_pred = bst.predict(dtrain)
 
             return y_pred, y_train_pred, y_train, 0
+
+    else:
+        if model == 'RF':
+            # randomforest!
+            clf = RandomForestClassifier(n_estimators=n_estimators, verbose=1)
+            clf.fit(X_train, y_train)
+
+        elif model == 'KN':
+            clf = KNeighborsClassifier()
+            clf.fit(X_train, y_train)
+
+        elif "SVC" in model:
+            clf = svm.SVC(probability=True)
+            clf.fit(X_train, y_train)
+
+        elif model == 'ET':
+            clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
+                                       n_jobs=params['n_jobs'],
+                                       max_features=params['max_features'],
+                                       criterion=params['criterion'],
+                                       verbose=params['verbose'],
+                                       random_state=0)
+            clf.fit(X_train, y_train)
+
+            importances = clf.feature_importances_
+            std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+                         axis=0)
+            indices = np.argsort(importances)[::-1]
+            # Print the feature ranking
+            print("Feature ranking:")
+
+            for f in range(min(len(features), 40)):
+                print("%d. feature %d: %s = (%f)"
+                      % (f, indices[f], features[indices[f]], importances[indices[f]]))
+
+                print list((features[indices]))[:40]
+
+            # Plot the feature importances of the forest
+            if params['plot_importance']:
+                plt.figure()
+                plt.title("Feature importances")
+                plt.bar(range(len(features)), importances[indices],
+                        color="r", yerr=std[indices], align="center")
+                plt.xticks(range(len(features)), features[indices])
+                plt.xlim([-1, len(features)])
+                plt.show()
+
+            y_pred = clf.predict_proba(X_test)
+            y_train_pred = clf.predict_proba(X_train)
+            
+            return y_pred[:, 1], y_train_pred[:, 1], 0, list((features[indices]))
+
+        y_pred = clf.predict_proba(X_test)
+        y_train_pred = clf.predict_proba(X_train)
+
+        return y_pred[:, 1], y_train_pred[:, 1], 0, 0
 
 
 def append_merchandise(info, drop=True):
@@ -364,6 +384,7 @@ def append_bids_intervals(info, biinfo, bids_intervals):
 
     return info
 
+
 def append_info(info, info_new, keys_appended):
     """
     Append info
@@ -384,6 +405,3 @@ def append_info(info, info_new, keys_appended):
     info = pd.concat(info_appended, axis=1)
 
     return info
-
-
-    

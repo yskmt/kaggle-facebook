@@ -205,21 +205,24 @@ if __name__ == "__main__":
             'data/num_bids_sametime_info_test.csv', index_label='bidder_id')
 
     elif 'bid-streaks' in argv[1]:
-        # bots
-        bid_streaks_bots = gather_bid_streaks(
-            info_bots, bids_bots, bid_timeframe=10.1)
-        bid_streaks_bots.to_csv(
-            'data/bid_streaks_info_bots.csv', index_label='bidder_id')
-        # humans
-        bid_streaks_humans = gather_bid_streaks(
-            info_humans, bids_humans, bid_timeframe=10.1)
-        bid_streaks_humans.to_csv(
-            'data/bid_streaks_info_humans.csv', index_label='bidder_id')
-        # test
-        bid_streaks_test = gather_bid_streaks(
-            info_test, bids_test, bid_timeframe=10.1)
-        bid_streaks_test.to_csv(
-            'data/bid_streaks_info_test.csv', index_label='bidder_id')
+
+        for tf in [1, 5, 10, 15, 20]:
+            btf = tf+0.1
+            # bots
+            bid_streaks_bots = gather_bid_streaks(
+                info_bots, bids_bots, bid_timeframe=btf)
+            bid_streaks_bots.to_csv(
+                'data/bid_streaks_info_bots_%d.csv' %tf, index_label='bidder_id')
+            # humans
+            bid_streaks_humans = gather_bid_streaks(
+                info_humans, bids_humans, bid_timeframe=btf)
+            bid_streaks_humans.to_csv(
+                'data/bid_streaks_info_humans_%d.csv' %tf, index_label='bidder_id')
+            # test
+            bid_streaks_test = gather_bid_streaks(
+                info_test, bids_test, bid_timeframe=btf)
+            bid_streaks_test.to_csv(
+                'data/bid_streaks_info_test_%d.csv' %tf, index_label='bidder_id')
         
     elif 'combine' in argv[1]:
 
