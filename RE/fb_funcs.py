@@ -30,23 +30,6 @@ from sklearn import cross_validation
 
 import xgboost as xgb
 
-merchandise_keys = ['auto parts',
-                    'books and music',
-                    'clothing',
-                    'computers',
-                    'furniture',
-                    'home goods',
-                    'jewelry',
-                    'mobile',
-                    'office equipment',
-                    'sporting goods']
-
-# countries that can be significant: derived in analysis.py
-keys_sig = ['ar', 'au', 'bd', 'dj', 'ga', 'gq', 'id', 'mc', 'ml',
-            'mr', 'mz', 'nl', 'th']
-keys_na = ['an', 'aw', 'bi', 'cf', 'er', 'gi', 'gn', 'gp', 'mh', 'nc',
-           'sb', 'tc', 'vi', 'ws']
-
 
 def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
                params=None):
@@ -302,136 +285,6 @@ def fit_and_predict(info_humans, info_bots, info_test,
 
         return y_pred[:, 1], y_train_pred[:, 1], 0, 0
 
-
-def append_merchandise(info, drop=True):
-    """
-    Append merchandises a dummy variable and drop if needed.
-    """
-
-    merchandise = info.merchandise
-    merchandise = pd.get_dummies(merchandise)
-    for key in merchandise_keys:
-        if key not in merchandise.keys():
-            print key, "added."
-            merchandise[key] \
-                = pd.Series(np.zeros(len(merchandise)),
-                            index=merchandise.index)
-    info = pd.concat([info, merchandise], axis=1)
-
-    if drop == True:
-        info.drop('merchandise', axis=1, inplace=True)
-
-    return info
-
-
-def append_bba(info, bbainfo, num_bba):
-    """
-    Append bids-by-auction data
-    """
-
-    return pd.concat([info, bbainfo.iloc[:, :num_bba]], axis=1)
-
-
-def append_countries(info, cinfo, countries):
-    """
-    Append country counts
-
-    info: bidder info
-    cinfo: bidder country info
-    countries: countries to be appended
-    """
-
-    countries_appended = []
-    for key in countries:
-        # for key in list(cinfo.keys()):
-        if key in list(cinfo.keys()):
-            countries_appended.append(cinfo[key])
-        else:
-            # just create zero-column
-            countries_appended.append(
-                pd.DataFrame(np.zeros(len(cinfo)), index=cinfo.index, columns=[key]))
-
-    countries_appended.append(info)
-
-    info = pd.concat(countries_appended, axis=1)
-
-    return info
-
-
-def append_device(info, dinfo, devices):
-    """
-    Append device counts
-
-    info: bidder info
-    dinfo: bidder country info
-    countries: countries to be appended
-    """
-
-    devices_appended = []
-    for key in devices:
-        # for key in list(dinfo.keys()):
-        if key in list(dinfo.keys()):
-            devices_appended.append(dinfo[key])
-        else:
-            # just create zero-column
-            devices_appended.append(
-                pd.DataFrame(np.zeros(len(dinfo)), index=dinfo.index, columns=[key]))
-
-    devices_appended.append(info)
-
-    info = pd.concat(devices_appended, axis=1)
-
-    return info
-
-
-def append_bids_intervals(info, biinfo, bids_intervals):
-    """
-    Append bids interval data
-
-    info: bidder info
-    biinfo: bidder country info
-    bids_intervals: bids_intervals to be appended
-    """
-
-    bids_intervals_appended = []
-    for key in bids_intervals:
-        if key in list(biinfo.keys()):
-            bids_intervals_appended.append(biinfo[key])
-        else:
-            # just create zero-column
-            bids_intervals_appended.append(
-                pd.DataFrame(np.zeros(len(biinfo)),
-                             index=biinfo.index, columns=[key]))
-
-    bids_intervals_appended.append(info)
-
-    info = pd.concat(bids_intervals_appended, axis=1)
-
-    return info
-
-
-def append_info(info, info_new, keys_appended):
-    """
-    Append info
-    """
-
-    info_appended = []
-    for key in keys_appended:
-        if key in list(info_new.keys()):
-            info_appended.append(info_new[key])
-        else:
-            # just create zero-column
-            info_appended.append(
-                pd.DataFrame(np.zeros(len(info_new)),
-                             index=info_new.index, columns=[key]))
-
-    info_appended.append(info)
-
-    info = pd.concat(info_appended, axis=1)
-
-    return info
-
-
 def get_Xy(info_humans, info_bots):    
     num_humans = len(info_humans)
     num_bots = len(info_bots)
@@ -454,7 +307,7 @@ def get_Xy(info_humans, info_bots):
 
     return X, y, features
 
-def predict_cv_ens(info_humans, info_bots, params_0, params_1,
+def predict_cv_ens(info_humans, info_bots, params,
                    n_folds=5):
     """
     prediction by ensemble
@@ -469,9 +322,7 @@ def predict_cv_ens(info_humans, info_bots, params_0, params_1,
         y, n_folds=n_folds, shuffle=True, random_state=None)
 
     # cv scores
-    roc_auc = np.zeros(n_folds)
-    roc_auc_0 = np.zeros(n_folds)
-    roc_auc_1 = np.zeros(n_folds)
+    roc_auc = np.zeros([n_folds, len(params)+1])
 
     n_cv = 0
     for train_index, test_index in kf:
@@ -479,54 +330,75 @@ def predict_cv_ens(info_humans, info_bots, params_0, params_1,
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        # XGBoost
+        ytps = []
+        for mn in range(len(params)):
+            ytps.append(predict_proba(X_train, y_train, X_test, params[mn]))
+
+            fpr, tpr, thresholds = roc_curve(y_test, ytps[mn])
+            roc_auc[n_cv, mn] = auc(fpr, tpr)
+
+        ytps = np.array(ytps)
+        # ensemble!
+        y_test_proba = ytps.mean(axis=0)
+
+        # validation errors
+        fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
+        roc_auc[n_cv, len(params)] = auc(fpr, tpr)
+        
+        n_cv += 1
+
+    return roc_auc
+
+
+def predict_proba(X_train, y_train, X_test, params):
+
+    model = params['model']
+
+    if 'XGB' in model:
         dtrain = xgb.DMatrix(X_train, label=y_train)
         xgb_params = {"objective": "binary:logistic",
-                      'eta': params_0['eta'],
-                      'gamma': params_0['gamma'],
-                      'max_depth': params_0['max_depth'],
-                      'min_child_weight': params_0['min_child_weight'],
-                      'subsample': params_0['subsample'],
-                      'colsample_bytree': params_0['colsample_bytree'],
-                      'nthread': params_0['nthread'],
-                      'silent': params_0['silent']}
-        num_rounds = int(params_0['num_rounds'])
+                      'eta': params['eta'],
+                      'gamma': params['gamma'],
+                      'max_depth': params['max_depth'],
+                      'min_child_weight': params['min_child_weight'],
+                      'subsample': params['subsample'],
+                      'colsample_bytree': params['colsample_bytree'],
+                      'nthread': params['nthread'],
+                      'silent': params['silent']}
+        num_rounds = int(params['num_rounds'])
 
         evallist = [(dtrain, 'train')]
         bst = xgb.train(xgb_params, dtrain, num_rounds, evallist)
         dtest = xgb.DMatrix(X_test)
-        y_test_proba_0 = bst.predict(dtest)
+        y_test_proba = bst.predict(dtest)
 
+    elif 'ET' in model:
         # extratree
-        clf = ExtraTreesClassifier(n_estimators=params_1['n_estimators'],
-                                   n_jobs=params_1['n_jobs'],
-                                   max_features=params_1['max_features'],
-                                   criterion=params_1['criterion'],
-                                   verbose=params_1['verbose'],
+        clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
+                                   n_jobs=params['n_jobs'],
+                                   max_features=params['max_features'],
+                                   criterion=params['criterion'],
+                                   verbose=params['verbose'],
                                    random_state=None)
                 
         clf.fit(X_train, y_train)
-        y_test_proba_1 = clf.predict_proba(X_test)[:,1]
+        y_test_proba = clf.predict_proba(X_test)[:,1]
 
-        # ensemble!
-        y_test_proba = (y_test_proba_0 + y_test_proba_1) / 2.0
+    elif "RF" in model:
+        clf = RandomForestClassifier(n_estimators=params['n_estimators'],
+                                     n_jobs=params['n_jobs'],
+                                     max_features=params['max_features'],
+                                     criterion=params['criterion'],
+                                     verbose=params['verbose'],
+                                     max_depth=params['max_depth'])
 
-        # validation errors
-
-        fpr_0, tpr_0, thresholds_0 = roc_curve(y_test, y_test_proba_0)
-        roc_auc_0[n_cv] = auc(fpr_0, tpr_0)
-        fpr_1, tpr_1, thresholds_1 = roc_curve(y_test, y_test_proba_1)
-        roc_auc_1[n_cv] = auc(fpr_1, tpr_1)
-        
-        fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
-        roc_auc[n_cv] = auc(fpr, tpr)
-        
-        n_cv += 1
-
-    return roc_auc, roc_auc_0, roc_auc_1
-
-
-def kfcv_ens(info_humans, info_bots, params_0, params_1,
+        clf.fit(X_train, y_train)
+        y_test_proba = clf.predict_proba(X_test)
+            
+    return y_test_proba
+    
+    
+def kfcv_ens(info_humans, info_bots, params,
              num_cv=5, num_folds=5):
     """
     k-fold cross validation
@@ -541,26 +413,16 @@ def kfcv_ens(info_humans, info_bots, params_0, params_1,
     roc_auc_std_1 = []
     
     for i in range(num_cv):
-        ra, ra_0, ra_1 \
-            = predict_cv_ens(info_humans, info_bots, params_0, params_1,
-                             n_folds=num_folds)
+        ra = predict_cv_ens(info_humans, info_bots, params,
+                            n_folds=num_folds)
 
-        print ra.mean(), ra.std()
-        roc_auc.append(ra.mean())
-        roc_auc_std.append(ra.std())
-
-        roc_auc_0.append(ra_0.mean())
-        roc_auc_std_0.append(ra_0.std())
-        roc_auc_1.append(ra_1.mean())
-        roc_auc_std_1.append(ra_1.std())
+        print ra.mean(axis=0), ra.std(axis=0)
+        roc_auc.append(ra.mean(axis=0))
+        roc_auc_std.append(ra.std(axis=0))
 
     roc_auc = np.array(roc_auc)
     roc_auc_std = np.array(roc_auc_std)
 
-    roc_auc_0 = np.array(roc_auc_0)
-    roc_auc_std_0 = np.array(roc_auc_std_0)
-    roc_auc_1 = np.array(roc_auc_1)
-    roc_auc_std_1 = np.array(roc_auc_std_1)
-    
-    return [roc_auc.mean(), roc_auc_std.mean(), roc_auc_0.mean(),
-            roc_auc_std_0.mean(), roc_auc_1.mean(), roc_auc_std_1.mean()]
+    import pdb
+    pdb.set_trace()
+    return [roc_auc.mean(), roc_auc_std.mean()]

@@ -19,10 +19,10 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import roc_curve, auc
 
 import fb_funcs
-from fb_funcs import (append_merchandise, predict_cv,
-                      fit_and_predict, append_info,
-                      append_countries, keys_sig, keys_na,
-                      append_bba, append_device, append_bids_intervals)
+from fb_funcs import predict_cv, fit_and_predict
+from utils import (append_merchandises, append_countries, append_bba,
+                   append_devices, append_bids_intervals, append_info)
+
 import ffs
 
 
@@ -51,9 +51,9 @@ if len(argv) == 1:
     ##########################################################################
     # Merchandise data
     print "Adding merchandise data..."
-    info_humans = append_merchandise(info_humans, drop=True)
-    info_bots = append_merchandise(info_bots, drop=True)
-    info_test = append_merchandise(info_test, drop=True)
+    info_humans = append_merchandises(info_humans, drop=True)
+    info_bots = append_merchandises(info_bots, drop=True)
+    info_test = append_merchandises(info_test, drop=True)
 
     ##########################################################################
     # Country data
@@ -81,9 +81,9 @@ if len(argv) == 1:
     devices_appended = dinfo_humans.keys()\
                                    .union(dinfo_bots.keys())\
                                    .union(dinfo_test.keys())
-    info_humans = append_device(info_humans, dinfo_humans, devices_appended)
-    info_bots = append_device(info_bots, dinfo_bots, devices_appended)
-    info_test = append_device(info_test, dinfo_test, devices_appended)
+    info_humans = append_devices(info_humans, dinfo_humans, devices_appended)
+    info_bots = append_devices(info_bots, dinfo_bots, devices_appended)
+    info_test = append_devices(info_test, dinfo_test, devices_appended)
 
     info_humans.fillna(0, inplace=True)
     info_bots.fillna(0, inplace=True)
@@ -304,14 +304,19 @@ else:
 # k-fold Cross Validaton
 ############################################################################
 # params for xgb
-params_0 = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
+params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
             'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
             'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 1.0}
 
 # params for et
-params_1 = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
+params_et = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
             'n_jobs': 2}
+
+# params for RF
+params_rf = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
+             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
+             'n_jobs': -1, 'max_depth': 3}
 
 # params for logistic regression
 # params = {'model': 'logistic'}
@@ -321,19 +326,15 @@ params_1 = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
 #           'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
 #           'n_jobs': 2}
 
-# params for RF
-# params = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
-#           'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-#           'n_jobs': -1, 'max_depth': 3}
-
-cv_roc_aucs \
-    = fb_funcs.kfcv_ens(info_humans, info_bots, params_0, params_1,
+roc_aucs \
+    = fb_funcs.kfcv_ens(info_humans, info_bots, [params_xgb, params_et, params_rf],
                         num_cv=5, num_folds=5)
 
 print "cross validation results:"
-print "ens:", cv_roc_aucs[0], "+-", cv_roc_aucs[1]
-print "xgb:", cv_roc_aucs[2], "+-", cv_roc_aucs[3]
-print "et:", cv_roc_aucs[4], "+-", cv_roc_aucs[5]
+print roc_aucs
+print "ens:", roc_aucs[0, 0], "+-", roc_aucs[0, 1]
+print "xgb:", roc_aucs[1, 0], "+-", roc_aucs[1, 1]
+print "et:", roc_aucs[2, 0], "+-", roc_aucs[2, 1]
 
 ############################################################################
 # fit and predict
