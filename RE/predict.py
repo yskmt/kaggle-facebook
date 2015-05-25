@@ -322,19 +322,18 @@ params_rf = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
 # params = {'model': 'logistic'}
 
 # params for svc
-# params = {'model': 'SVC', 'n_estimators': 3000, 'max_features': 'auto',
-#           'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-#           'n_jobs': 2}
+params_svc = {'model': 'SVC', 'n_estimators': 3000, 'max_features': 'auto',
+              'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
+              'n_jobs': 2}
+
+params_ens = [params_xgb, params_et]
 
 roc_aucs \
-    = fb_funcs.kfcv_ens(info_humans, info_bots, [params_xgb, params_et, params_rf],
+    = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
                         num_cv=5, num_folds=5)
 
 print "cross validation results:"
 print roc_aucs
-print "ens:", roc_aucs[0, 0], "+-", roc_aucs[0, 1]
-print "xgb:", roc_aucs[1, 0], "+-", roc_aucs[1, 1]
-print "et:", roc_aucs[2, 0], "+-", roc_aucs[2, 1]
 
 ############################################################################
 # fit and predict

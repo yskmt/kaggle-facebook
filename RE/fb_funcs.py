@@ -333,7 +333,6 @@ def predict_cv_ens(info_humans, info_bots, params,
         ytps = []
         for mn in range(len(params)):
             ytps.append(predict_proba(X_train, y_train, X_test, params[mn]))
-
             fpr, tpr, thresholds = roc_curve(y_test, ytps[mn])
             roc_auc[n_cv, mn] = auc(fpr, tpr)
 
@@ -393,7 +392,7 @@ def predict_proba(X_train, y_train, X_test, params):
                                      max_depth=params['max_depth'])
 
         clf.fit(X_train, y_train)
-        y_test_proba = clf.predict_proba(X_test)
+        y_test_proba = clf.predict_proba(X_test)[:,1]
             
     return y_test_proba
     
@@ -423,6 +422,4 @@ def kfcv_ens(info_humans, info_bots, params,
     roc_auc = np.array(roc_auc)
     roc_auc_std = np.array(roc_auc_std)
 
-    import pdb
-    pdb.set_trace()
-    return [roc_auc.mean(), roc_auc_std.mean()]
+    return [roc_auc.mean(axis=0), roc_auc_std.mean(axis=0)]
