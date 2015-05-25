@@ -21,7 +21,8 @@ from sklearn.metrics import roc_curve, auc
 import fb_funcs
 from fb_funcs import predict_cv, fit_and_predict
 from utils import (append_merchandises, append_countries, append_bba,
-                   append_devices, append_bids_intervals, append_info)
+                   append_devices, append_bids_intervals, append_info,
+                   write_submission)
 
 import ffs
 
@@ -292,11 +293,20 @@ elif 'resume' in argv[1]:
     # Save/Load preprocessed data
     ##########################################################################
 
+    if len(argv)>2:
+        n_resume = float(argv[2])
+    else:
+        n_resume = 9
+    
     print "loading preprocessed data..."
-    info_humans = pd.read_csv('data/info_humans_pp9.csv', index_col=0)
-    info_bots = pd.read_csv('data/info_bots_pp9.csv', index_col=0)
-    info_test = pd.read_csv('data/info_test_pp9.csv', index_col=0)
+    info_humans = pd.read_csv('data/info_humans_pp%d.csv' %(n_resume),
+                              index_col=0)
+    info_bots = pd.read_csv('data/info_bots_pp%d.csv' %(n_resume),
+                            index_col=0)
+    info_test = pd.read_csv('data/info_test_pp%d.csv' %(n_resume),
+                            index_col=0)
 
+    print info_test.describe()
 else:
     sys.exit(1)
 
@@ -310,62 +320,53 @@ params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
 
 # params for et
 params_et = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
-            'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
+            'criterion': 'gini', 'plot_importance': False, 'verbose': 0,
             'n_jobs': 2}
 
 # params for RF
 params_rf = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
-             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
+             'criterion': 'gini', 'plot_importance': False, 'verbose': 0,
              'n_jobs': -1, 'max_depth': 3}
 
 # params for logistic regression
 # params = {'model': 'logistic'}
 
 # params for svc
-params_svc = {'model': 'SVC', 'n_estimators': 3000, 'max_features': 'auto',
-              'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-              'n_jobs': 2}
+params_svc = {'model': 'SVC', 'C': 0.1, 'gamma': 100.0}
 
-params_ens = [params_xgb, params_et]
+# params for kneighbor
+params_kn = {'model': 'KN', 'n_neighbors': 100, 'weights': 'distance',
+             'algorithm': 'auto'}
 
-roc_aucs \
-    = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                        num_cv=5, num_folds=5)
+params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn]
+# params_ens = [params_svc]
 
+roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
+                             num_cv=5, num_folds=5)
 print "cross validation results:"
+roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
+                        columns=['xgb', 'et', 'svc', 'rf', 'kn', 'ens'])
 print roc_aucs
+roc_aucs.to_csv('data/submi/roc_aucs.csv', float_format='%11.6f')
 
 ############################################################################
 # fit and predict
 ############################################################################
 
-y_test_proba, y_train_proba, cvr, feature_importance\
+y_test_proba, ytps\
     = fb_funcs.fit_and_predict(info_humans, info_bots, info_test,
-                               params=params)
+                               params=params_ens)
 
-try:
-    auc_max = np.max(np.array(
-        map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cvr)))
-    ind_max = np.argmax(np.array(
-        map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cvr)))
-
-    print ind_max, auc_max
-except:
-    pass
 ############################################################################
 # submission file generation
 ############################################################################
-
-# 70 bidders in test.csv do not have any data in bids.csv. Thus they
-# are not included in analysis/prediction, but they need to be
-# appended in the submission. The prediction of these bidders do not matter.
+submissionfile = 'data/submi/sub_ens.csv'
+testfile = 'data/info_test.csv'
 
 print "writing a submission file..."
-submission = pd.DataFrame(
-    y_test_proba, index=info_test.index, columns=['prediction'])
-test_bidders = pd.read_csv('data/test.csv', index_col=0)
+write_submission(y_test_proba, info_test.index, testfile, submissionfile)
 
-submission = pd.concat([submission, test_bidders], axis=1)
-submission.fillna(0, inplace=True)
-submission.to_csv('data/submission.csv', columns=['prediction'],
-                  index_label='bidder_id')
+print "writing results from different models..."
+for i in range(len(ytps)):
+    submf = 'data/submi/sub_%s.csv' %(params_ens[i]['model'])
+    write_submission(ytps[i], info_test.index, testfile, submf)

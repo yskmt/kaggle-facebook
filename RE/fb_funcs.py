@@ -20,7 +20,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn import svm
+from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 
 from sklearn.neighbors import KNeighborsClassifier
@@ -148,8 +148,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
 def fit_and_predict(info_humans, info_bots, info_test,
                     params, p_use=None):
 
-    model = params['model']
-
+    num_models = len(params)
     num_humans = len(info_humans)
     num_bots = len(info_bots)
     # num_test = len(info_test)
@@ -168,124 +167,63 @@ def fit_and_predict(info_humans, info_bots, info_test,
         num_bots = num_bots_use
         num_humans = num_humans_use
 
-    # combine humans and bots data to create given data
-    info_given = pd.concat([info_humans, info_bots], axis=0)
-    labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
-    num_given = len(labels_train)
-
-    # shuffle just in case
-    index_sh = np.random.choice(num_given, num_given, replace=False)
-    info_given = info_given.iloc[index_sh]
-    labels_train = labels_train[index_sh]
-
     # get matrices forms
-    X_train = info_given.sort(axis=1).as_matrix()
-    y_train = labels_train
-    X_test = info_test.sort(axis=1).as_matrix()
+    ytps = []
+    X_train, y_train, features, scaler, X_test\
+        = get_Xy(info_humans, info_bots, info_test)
 
-    # scale
-    scaler = StandardScaler()
-    scaler.fit(X_train)
-    X_train = scaler.transform(X_train)
-    X_test = scaler.transform(X_test)
+    for mn in range(num_models):
+        ytps.append(predict_proba(X_train, y_train, X_test, params[mn]))
 
-    features = info_given.sort(axis=1).keys()
+    ytps = np.array(ytps)
+    # ensemble!
+    y_test_proba = ytps.mean(axis=0)
 
-    if "XGB" in model:
-        xgb_params = {"objective": "binary:logistic",
-                      'eta': params['eta'],
-                      'gamma': params['gamma'],
-                      'max_depth': params['max_depth'],
-                      'min_child_weight': params['min_child_weight'],
-                      'subsample': params['subsample'],
-                      'colsample_bytree': params['colsample_bytree'],
-                      'nthread': params['nthread'],
-                      'silent': params['silent']}
-        num_rounds = int(params['num_rounds'])
+    return y_test_proba, ytps
+        
+        # if "XGB_CV" in model:
+        #     cv = 5
+        #     cv_result = xgb.cv(xgb_params, dtrain, num_rounds, nfold=cv,
+        #                        metrics={'rmse', 'error', 'auc'}, seed=0)
+        #     return 0, 0, cv_result, 0
 
-        dtrain = xgb.DMatrix(X_train, label=y_train)
-
-        if "CV" in model:
-            cv = 5
-            cv_result = xgb.cv(xgb_params, dtrain, num_rounds, nfold=cv,
-                               metrics={'rmse', 'error', 'auc'}, seed=0)
-            return 0, 0, cv_result, 0
-        else:
-            evallist = [(dtrain, 'train')]
-            bst = xgb.train(xgb_params, dtrain, num_rounds, evallist)
-            dtest = xgb.DMatrix(X_test)
-            y_pred = bst.predict(dtest)
-            y_train_pred = bst.predict(dtrain)
-
-            return y_pred, y_train_pred, y_train, 0
-
-    else:
-        if model == 'KN':
-            clf = KNeighborsClassifier()
-            clf.fit(X_train, y_train)
-
-        elif "SVC" in model:
-            clf = svm.SVC(probability=True)
-            clf.fit(X_train, y_train)
-
-        elif "logistic" in model:
-            clf = LogisticRegression()
-            clf.fit(X_train, y_train)
-
-        elif "RF" in model:
-            clf = RandomForestClassifier(n_estimators=params['n_estimators'],
-                                         n_jobs=params['n_jobs'],
-                                         max_features=params['max_features'],
-                                         criterion=params['criterion'],
-                                         verbose=params['verbose'],
-                                         max_depth=params['max_depth'])
-            clf.fit(X_train, y_train)
             
-        elif model == 'ET':
-            clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
-                                       n_jobs=params['n_jobs'],
-                                       max_features=params['max_features'],
-                                       criterion=params['criterion'],
-                                       verbose=params['verbose'],
-                                       random_state=0)
-            clf.fit(X_train, y_train)
-
-        if (model == 'ET') or (model == 'RF'):
+        # if (model == 'ET') or (model == 'RF'):
             
-            importances = clf.feature_importances_
-            std = np.std([tree.feature_importances_ for tree in clf.estimators_],
-                         axis=0)
-            indices = np.argsort(importances)[::-1]
+        #     importances = clf.feature_importances_
+        #     std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+        #                  axis=0)
+        #     indices = np.argsort(importances)[::-1]
 
-            # Print the feature ranking
-            print("Feature ranking:")
-            for f in range(min(len(features), 40)):
-                print("%d. feature %d: %s = (%f)"
-                      % (f, indices[f], features[indices[f]], importances[indices[f]]))
+        #     # Print the feature ranking
+        #     print("Feature ranking:")
+        #     for f in range(min(len(features), 40)):
+        #         print("%d. feature %d: %s = (%f)"
+        #               % (f, indices[f], features[indices[f]], importances[indices[f]]))
 
-            print list((features[indices]))[:40]
+        #     print list((features[indices]))[:40]
 
-            # Plot the feature importances of the forest
-            if params['plot_importance']:
-                plt.figure()
-                plt.title("Feature importances")
-                plt.bar(range(len(features)), importances[indices],
-                        color="r", yerr=std[indices], align="center")
-                plt.xticks(range(len(features)), features[indices])
-                plt.xlim([-1, len(features)])
-                plt.show()
+        #     # Plot the feature importances of the forest
+        #     if params['plot_importance']:
+        #         plt.figure()
+        #         plt.title("Feature importances")
+        #         plt.bar(range(len(features)), importances[indices],
+        #                 color="r", yerr=std[indices], align="center")
+        #         plt.xticks(range(len(features)), features[indices])
+        #         plt.xlim([-1, len(features)])
+        #         plt.show()
 
-            y_pred = clf.predict_proba(X_test)
-            y_train_pred = clf.predict_proba(X_train)
+        #     y_pred = clf.predict_proba(X_test)
+        #     y_train_pred = clf.predict_proba(X_train)
             
-            return y_pred[:, 1], y_train_pred[:, 1], 0, list((features[indices]))
+        #     return y_pred[:, 1], y_train_pred[:, 1], 0, list((features[indices]))
 
-        y_pred = clf.predict_proba(X_test)
-        y_train_pred = clf.predict_proba(X_train)
+        # y_pred = clf.predict_proba(X_test)
+        # y_train_pred = clf.predict_proba(X_train)
 
-        return y_pred[:, 1], y_train_pred[:, 1], 0, 0
+        # return y_pred[:, 1], y_train_pred[:, 1], 0, 0
 
-def get_Xy(info_humans, info_bots):    
+def get_Xy(info_humans, info_bots, info_test=None):
     num_humans = len(info_humans)
     num_bots = len(info_bots)
 
@@ -301,11 +239,20 @@ def get_Xy(info_humans, info_bots):
 
     # get matrices forms
     X = info_given.sort(axis=1).as_matrix()
-    X = StandardScaler().fit_transform(X)
+    scaler = StandardScaler()
+    scaler.fit(X)
+    X = scaler.transform(X)
+    
     y = labels_train
     features = info_given.sort(axis=1).keys()
 
-    return X, y, features
+    if info_test is not None:
+        X_test = info_test.sort(axis=1).as_matrix()
+        X_test = scaler.transform(X_test)
+
+        return X, y, features, scaler, X_test
+        
+    return X, y, features, scaler
 
 def predict_cv_ens(info_humans, info_bots, params,
                    n_folds=5):
@@ -315,7 +262,7 @@ def predict_cv_ens(info_humans, info_bots, params,
     p_valid: validation set fraction
     """
 
-    X, y, features = get_Xy(info_humans, info_bots)
+    X, y, features, scaler = get_Xy(info_humans, info_bots)
     
     # split for cv
     kf = cross_validation.StratifiedKFold(
@@ -393,7 +340,23 @@ def predict_proba(X_train, y_train, X_test, params):
 
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
-            
+
+    elif "KN" in model:
+        clf = KNeighborsClassifier(n_neighbors=params['n_neighbors'],
+                                   weights=params['weights'],
+                                   algorithm=params['algorithm'])
+
+        clf.fit(X_train, y_train)
+        y_test_proba = clf.predict_proba(X_test)[:,1]
+
+    elif "SVC" in model:
+        clf = SVC(C=params['C'],
+                  gamma=params['gamma'],
+                  probability=True)
+        clf.fit(X_train, y_train)
+        y_test_proba = clf.predict_proba(X_test)[:,1]
+
+        
     return y_test_proba
     
     

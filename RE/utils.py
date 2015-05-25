@@ -157,3 +157,19 @@ def append_info(info, info_new, keys_appended):
     info = pd.concat(info_appended, axis=1)
 
     return info
+
+def write_submission(y_test_proba, test_index, testfile, submissionfile):
+    """
+    70 bidders in test.csv do not have any data in bids.csv. Thus they
+    are not included in analysis/prediction, but they need to be
+    appended in the submission. The prediction of these bidders do not matter.
+    """
+
+    submission = pd.DataFrame(
+        y_test_proba, index=test_index, columns=['prediction'])
+    test_bidders = pd.read_csv(testfile, index_col=0)
+
+    submission = pd.concat([submission, test_bidders], axis=1)
+    submission.fillna(0, inplace=True)
+    submission.to_csv(submissionfile, columns=['prediction'],
+                      index_label='bidder_id')
