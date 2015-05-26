@@ -73,7 +73,7 @@ if len(argv) == 1:
     info_bots.fillna(0, inplace=True)
     info_test.fillna(0, inplace=True)
 
-    ##########################################################################
+    # ##########################################################################
     # Device data
     print "Adding devices data"
     dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
@@ -190,25 +190,26 @@ if len(argv) == 1:
     # info_bots.fillna(0, inplace=True)
     # info_test.fillna(0, inplace=True)
     
-    # ##########################################################################
-    # url data
-    print "Adding url data"
-    urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
-    urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
-    urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+    ##########################################################################
+    # # url data
+    # print "Adding url data"
+    # urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+    # urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+    # urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
 
-    urlinfo_humans = urlinfo_humans>0
-    urlinfo_bots = urlinfo_bots>0
-    urlinfo_test = urlinfo_test>0
+    # urlinfo_humans = urlinfo_humans>0
+    # urlinfo_bots = urlinfo_bots>0
+    # urlinfo_test = urlinfo_test>0
     
-    keys_url = urlinfo_humans.keys()
-    info_humans = append_info(info_humans, urlinfo_humans, keys_url)
-    info_bots = append_info(info_bots, urlinfo_bots, keys_url)
-    info_test = append_info(info_test, urlinfo_test, keys_url)
+    # keys_url = urlinfo_humans.keys()
+    # info_humans = append_info(info_humans, urlinfo_humans, keys_url)
+    # info_bots = append_info(info_bots, urlinfo_bots, keys_url)
+    # info_test = append_info(info_test, urlinfo_test, keys_url)
 
-    info_humans.fillna(0, inplace=True)
-    info_bots.fillna(0, inplace=True)
-    info_test.fillna(0, inplace=True)
+    # info_humans.fillna(0, inplace=True)
+    # info_bots.fillna(0, inplace=True)
+    # info_test.fillna(0, inplace=True)
+
     ##########################################################################
     # bid counts for each period data
     print "Adding bid count for each period data"
@@ -256,7 +257,9 @@ if len(argv) == 1:
     info_test.fillna(0, inplace=True)
 
     keys_use = keys_all
+    keys_use = ['0_num_ips', '1_num_aucs', '1_num_countries', '2_num_aucs', '2_num_ips', 'ave_num_ips', 'streak_10', 'num_bids_sametime_diffauc', 'int_7', 'int_10', 'int_31', 'int_32', 'int_33', 'int_34', 'int_59', 'int_60', 'int_63', 'int_65', 'int_68', 'int_69', 'int_71', 'int_73', 'int_76', 'int_83', 'int_86', 'int_87', 'int_94', 'int_95', 'phone0', 'phone1000', 'phone1006', 'phone101', 'phone1010', 'phone1021']
 
+    
     print "Extracting keys..."
     info_humans = info_humans[keys_use]
     info_bots = info_bots[keys_use]
@@ -267,13 +270,13 @@ if len(argv) == 1:
     # info_bots.to_csv('data/info_bots_pp1.csv')
     # info_test.to_csv('data/info_test_pp1.csv')
 
-    # Feature selection by chi2 test and recursive featuer elimination
-    skb, rfecv = fb_funcs.recursive_feature_selection(info_humans, info_bots)
-    print rfecv.support_
-    print rfecv.ranking_
-    print list(info_humans.keys()[rfecv.support_])
-    print rfecv.n_features_, rfecv.grid_scores_[rfecv.n_features_]
-    sys.exit(1)
+    # # Feature selection by chi2 test and recursive featuer elimination
+    # skb, rfecv = fb_funcs.recursive_feature_selection(info_humans, info_bots)
+    # print rfecv.support_
+    # print rfecv.ranking_
+    # print list(info_humans.keys()[rfecv.support_])
+    # print rfecv.n_features_, rfecv.grid_scores_[rfecv.n_features_]
+    # sys.exit(1)
     
 elif 'resume' in argv[1]:
     ##########################################################################

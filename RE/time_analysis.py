@@ -62,6 +62,35 @@ def gather_bid_interval_counts(info, bids):
     return bids_intervals
 
 
+def gather_bid_interval_counts_grouped(info, bids):
+    """
+    Gather the bid interval counts.
+    Use the multiple of the minimum interval (==52631578.95) and group some of them.
+    """
+
+    bids_intervals = []
+    for i in range(len(info)):
+        if i % 100 == 0:
+            print '%d/%d' % (i, len(info))
+
+        bi = plot_intervals_hist(bids, info, info.index[i])
+
+        # normalize by min_interval
+        bi = (np.array(bi) + eps) / min_interval
+        # use the first 100 interval unit, but group them
+        bins = [0, 1, 2, 4, 8, 16, 32, 64, 128]
+        bi_df = pd.DataFrame(
+            np.histogram(bi[bi < 129], bins=bins)[0].reshape(1, len(bins)-1),
+            index=[info.index[i]])
+
+        bids_intervals.append(bi_df)
+
+    bids_intervals = pd.concat(bids_intervals, axis=0)
+    bids_intervals.columns = map(lambda x: 'interval_' + str(x), bins[1:])
+
+    return bids_intervals
+
+
 ##########################################################################
 # Gather the auction count for the same time-frame
 ##########################################################################
@@ -172,7 +201,7 @@ if __name__ == "__main__":
     max_interval = 0.03e12
     eps = 100  # some space for int division to work
 
-    if 'interval-counts' in argv[1]:
+    if 'interval-counts' == argv[1]:
         # bots
         bids_intervals_bots = gather_bid_interval_counts(info_bots, bids_bots)
         bids_intervals_bots.to_csv(
@@ -186,6 +215,21 @@ if __name__ == "__main__":
         bids_intervals_test = gather_bid_interval_counts(info_test, bids_test)
         bids_intervals_test.to_csv(
             'data/bids_intervals_test_info.csv', index_label='bidder_id')
+        
+    elif 'interval-counts-grouped' == argv[1]:
+        # bots
+        bids_intervals_bots = gather_bid_interval_counts_grouped(info_bots, bids_bots)
+        bids_intervals_bots.to_csv(
+            'data/bids_gintervals_bots_info.csv', index_label='bidder_id')
+        # humans
+        bids_intervals_humans = gather_bid_interval_counts_grouped(
+            info_humans, bids_humans)
+        bids_intervals_humans.to_csv(
+            'data/bids_gintervals_humans_info.csv', index_label='bidder_id')
+        # test
+        bids_intervals_test = gather_bid_interval_counts_grouped(info_test, bids_test)
+        bids_intervals_test.to_csv(
+            'data/bids_gintervals_test_info.csv', index_label='bidder_id')
 
     elif 'same-time-bids' in argv[1]:
         # humans

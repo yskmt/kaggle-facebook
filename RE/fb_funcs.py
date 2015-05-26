@@ -27,7 +27,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import roc_curve, auc, roc_auc_score
 from sklearn import cross_validation
 
-from sklearn.feature_selection import RFECV, SelectFpr
+from sklearn.feature_selection import RFECV, SelectFpr, VarianceThreshold
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from sklearn.decomposition import PCA
@@ -432,10 +432,18 @@ def recursive_feature_selection(info_humans, info_bots):
     X, y, features, scaler = get_Xy(info_humans, info_bots, scale=False)
 
     print "first feature selection by chi2 test"
-    skb = SelectKBest(chi2, k=500)
-    # skb = SelectFpr(chi2, alpha=0.005)
-    X_new = skb.fit_transform(X, y)
 
+    skb = VarianceThreshold(threshold=(.8 * (1 - .8)))
+    X_new = skb.fit_transform(X)
+    features_1 = features[skb.get_support()]
+    
+    skb = SelectKBest(chi2, k=200)
+    # skb = SelectFpr(chi2, alpha=0.005)
+    X_new = skb.fit_transform(X_new, y)
+    features_2 = features_1[skb.get_support()]
+    
+    set_trace()
+    
     print "scale"
     scaler = StandardScaler()
     scaler.fit(X_new)
