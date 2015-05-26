@@ -256,23 +256,51 @@ if len(argv) == 1:
     info_bots.fillna(0, inplace=True)
     info_test.fillna(0, inplace=True)
 
-    keys_use = keys_all
+    # keys_use = keys_all
 
     # Feature selection by filtering!
     keys_use = fb_funcs.filter_features(info_humans, info_bots)
     keys_use = list(keys_use[1])
 
-    # keys_use = ['0_num_ips', '1_num_aucs', '1_num_countries', '2_num_aucs', '2_num_ips', 'ave_num_ips', 'streak_10', 'num_bids_sametime_diffauc', 'int_7', 'int_10', 'int_31', 'int_32', 'int_33', 'int_34', 'int_59', 'int_60', 'int_63', 'int_65', 'int_68', 'int_69', 'int_71', 'int_73', 'int_76', 'int_83', 'int_86', 'int_87', 'int_94', 'int_95', 'phone0', 'phone1000', 'phone1006', 'phone101', 'phone1010', 'phone1021']
+    # # 0.959142 +- 0.021752
+    # keys_use = ['streak_1', 'uk', 'interval_64', 'streak_5',
+    #             'interval_8', 'streak_15', 'interval_16', 'interval_128', 'bba_4',
+    #             'interval_32', 'streak_10', 'phone5', 'streak_20', 'interval_4',
+    #             'bba_5', 'interval_2', 'bba_9', 'streak_40', 'phone76', 'streak_80',
+    #             'th', 'ave_num_bids', 'bba_3', 'bba_8', 'za', 'bba_7', '0_num_bids',
+    #             'bba_11', 'bba_10', 'bba_6', 'bba_1', 'bba_2', 'phone21',
+    #             'ave_num_urls', 'num_devices', 'num_bids_sametime_diffauc',
+    #             'phone46', 'num_bids', 'num_urls', 'num_bids_sametime',
+    #             'ave_num_devices', 'interval_1', 'phone16', '2_num_bids', 'my',
+    #             'bba_12', 'phone83', 'bba_14', 'phone124', 'phone63', 'ave_num_aucs',
+    #             'ca', 'bba_15', 'bba_13', 'num_countries', '2_num_urls', 'phone168',
+    #             'num_aucs', '2_num_aucs', 'bba_16', 'ave_num_countries', 'us',
+    #             'bba_17', 'phone224', '0_num_urls', 'phone11', 'phone125',
+    #             'ave_num_ips']
 
+    # keys_use = ['interval_64', 'num_devices', 'uk', 'phone76',
+    #             'ave_num_bids', 'interval_128', 'interval_16', 'ave_num_devices',
+    #             'bba_4', 'streak_80', 'interval_8', 'bba_8', 'bba_9', 'ave_num_urls',
+    #             'interval_32', 'bba_5', 'ave_num_aucs']
+
+    # # 0.927785 +- 0.032087
+    # keys_use = ['ave_num_bids', 'interval_64', 'bba_9', 'bba_8',
+    #             'interval_16', 'interval_8', 'num_devices', 'bba_4', 'interval_128']
+
+    # # 0.890121 +- 0.013687
+    # keys_use = ['ave_num_bids', 'interval_64', 'bba_9', 'bba_8']
+    
     print "Extracting keys..."
     info_humans = info_humans[keys_use]
     info_bots = info_bots[keys_use]
     info_test = info_test[keys_use]
 
+    num_features = len(keys_use)
+    
     print "Saving prprocessed data.."
-    # info_humans.to_csv('data/info_humans_pp1.csv')
-    # info_bots.to_csv('data/info_bots_pp1.csv')
-    # info_test.to_csv('data/info_test_pp1.csv')
+    info_humans.to_csv('data_pp/info_humans_%d.csv' %num_features)
+    info_bots.to_csv('data_pp/info_bots_%d.csv' %num_features)
+    info_test.to_csv('data_pp/info_test_%d.csv' %num_features)
 
     # # Feature selection by chi2 test and recursive featuer elimination
     # skb, rfecv = fb_funcs.recursive_feature_selection(info_humans, info_bots)
@@ -337,7 +365,7 @@ params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn]
 params_ens = [params_xgb, params_et]
 
 roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                             num_cv=1, num_folds=5)
+                             num_cv=10, num_folds=10)
 
 roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
                         columns = map(lambda x: x['model'], params_ens)+['ENS'])
