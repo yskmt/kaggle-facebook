@@ -113,12 +113,12 @@ if len(argv) == 1:
     info_test = append_bba(info_test, bbainfo_test, min_bba)
 
     ##########################################################################
-    # Bids interval data
-    print "Adding bids interval data"
+    # Bids interval data (grouped)
+    print "Adding bids interval data (grouped)"
     biinfo_humans = pd.read_csv(
-        'data/bids_intervals_info_humans.csv', index_col=0)
-    biinfo_bots = pd.read_csv('data/bids_intervals_info_bots.csv', index_col=0)
-    biinfo_test = pd.read_csv('data/bids_intervals_info_test.csv', index_col=0)
+        'data/bids_gintervals_info_humans.csv', index_col=0)
+    biinfo_bots = pd.read_csv('data/bids_gintervals_info_bots.csv', index_col=0)
+    biinfo_test = pd.read_csv('data/bids_gintervals_info_test.csv', index_col=0)
 
     bids_intervals_appended = biinfo_humans.keys()\
                                            .union(biinfo_bots.keys())\
@@ -191,24 +191,24 @@ if len(argv) == 1:
     # info_test.fillna(0, inplace=True)
     
     ##########################################################################
-    # # url data
-    # print "Adding url data"
-    # urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
-    # urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
-    # urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+    # url data
+    print "Adding url data"
+    urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+    urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+    urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
 
-    # urlinfo_humans = urlinfo_humans>0
-    # urlinfo_bots = urlinfo_bots>0
-    # urlinfo_test = urlinfo_test>0
+    urlinfo_humans = urlinfo_humans>0
+    urlinfo_bots = urlinfo_bots>0
+    urlinfo_test = urlinfo_test>0
     
-    # keys_url = urlinfo_humans.keys()
-    # info_humans = append_info(info_humans, urlinfo_humans, keys_url)
-    # info_bots = append_info(info_bots, urlinfo_bots, keys_url)
-    # info_test = append_info(info_test, urlinfo_test, keys_url)
+    keys_url = urlinfo_humans.keys()
+    info_humans = append_info(info_humans, urlinfo_humans, keys_url)
+    info_bots = append_info(info_bots, urlinfo_bots, keys_url)
+    info_test = append_info(info_test, urlinfo_test, keys_url)
 
-    # info_humans.fillna(0, inplace=True)
-    # info_bots.fillna(0, inplace=True)
-    # info_test.fillna(0, inplace=True)
+    info_humans.fillna(0, inplace=True)
+    info_bots.fillna(0, inplace=True)
+    info_test.fillna(0, inplace=True)
 
     ##########################################################################
     # bid counts for each period data
@@ -257,9 +257,13 @@ if len(argv) == 1:
     info_test.fillna(0, inplace=True)
 
     keys_use = keys_all
-    keys_use = ['0_num_ips', '1_num_aucs', '1_num_countries', '2_num_aucs', '2_num_ips', 'ave_num_ips', 'streak_10', 'num_bids_sametime_diffauc', 'int_7', 'int_10', 'int_31', 'int_32', 'int_33', 'int_34', 'int_59', 'int_60', 'int_63', 'int_65', 'int_68', 'int_69', 'int_71', 'int_73', 'int_76', 'int_83', 'int_86', 'int_87', 'int_94', 'int_95', 'phone0', 'phone1000', 'phone1006', 'phone101', 'phone1010', 'phone1021']
 
-    
+    # Feature selection by filtering!
+    keys_use = fb_funcs.filter_features(info_humans, info_bots)
+    keys_use = list(keys_use[1])
+
+    # keys_use = ['0_num_ips', '1_num_aucs', '1_num_countries', '2_num_aucs', '2_num_ips', 'ave_num_ips', 'streak_10', 'num_bids_sametime_diffauc', 'int_7', 'int_10', 'int_31', 'int_32', 'int_33', 'int_34', 'int_59', 'int_60', 'int_63', 'int_65', 'int_68', 'int_69', 'int_71', 'int_73', 'int_76', 'int_83', 'int_86', 'int_87', 'int_94', 'int_95', 'phone0', 'phone1000', 'phone1006', 'phone101', 'phone1010', 'phone1021']
+
     print "Extracting keys..."
     info_humans = info_humans[keys_use]
     info_bots = info_bots[keys_use]

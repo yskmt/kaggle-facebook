@@ -469,3 +469,21 @@ def recursive_feature_selection(info_humans, info_bots):
     # plt.ylabel("Cross validation score (nb of correct classifications)")
     # plt.plot(range(1, len(rfecv.grid_scores_) + 1), rfecv.grid_scores_)
     # plt.show()
+
+
+def filter_features(info_humans, info_bots):
+    """
+    Carry out 2-layer feature filtering
+    """
+    X, y, features, scaler = get_Xy(info_humans, info_bots, scale=False)
+    
+    vt = VarianceThreshold(threshold=(.8 * (1 - .8)))
+    X_new = vt.fit_transform(X)
+    features_1 = features[vt.get_support()]
+    
+    skb = SelectKBest(chi2, k=200)
+    X_new = skb.fit_transform(X_new, y)
+    features_2 = features_1[skb.get_support()]
+
+    return features_1, features_2, vt, skb
+    
