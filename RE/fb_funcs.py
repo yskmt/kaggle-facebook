@@ -22,11 +22,15 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
-
 from sklearn.neighbors import KNeighborsClassifier
 
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, roc_auc_score
 from sklearn import cross_validation
+
+from sklearn.feature_selection import RFECV, SelectFpr
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
+from sklearn.decomposition import PCA
 
 import xgboost as xgb
 
@@ -148,6 +152,9 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
 def fit_and_predict(info_humans, info_bots, info_test,
                     params, p_use=None):
 
+    # define result dict
+    result = {}
+    
     num_models = len(params)
     num_humans = len(info_humans)
     num_bots = len(info_bots)
@@ -173,13 +180,32 @@ def fit_and_predict(info_humans, info_bots, info_test,
         = get_Xy(info_humans, info_bots, info_test)
 
     for mn in range(num_models):
-        ytps.append(predict_proba(X_train, y_train, X_test, params[mn]))
+        ytp, clf = predict_proba(X_train, y_train, X_test, params[mn])
+        ytps.append(ytp)
 
+        if params[mn]['model'] == 'ET': 
+            importances = clf.feature_importances_
+            std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+                         axis=0)
+            indices = np.argsort(importances)[::-1]
+
+            # Print the feature ranking
+            print("Feature ranking:")
+            for f in range(min(len(features), 40)):
+                print("%d. feature %d: %s = (%f)"
+                      % (f, indices[f], features[indices[f]], importances[indices[f]]))
+
+            print list((features[indices]))[:40]
+            result['features'] = list((features[indices]))
+        
     ytps = np.array(ytps)
     # ensemble!
     y_test_proba = ytps.mean(axis=0)
 
-    return y_test_proba, ytps
+    result['y_test_proba'] = y_test_proba
+    result['ytps'] = ytps
+    
+    return result
         
         # if "XGB_CV" in model:
         #     cv = 5
@@ -223,7 +249,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
 
         # return y_pred[:, 1], y_train_pred[:, 1], 0, 0
 
-def get_Xy(info_humans, info_bots, info_test=None):
+def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     num_humans = len(info_humans)
     num_bots = len(info_bots)
 
@@ -239,16 +265,22 @@ def get_Xy(info_humans, info_bots, info_test=None):
 
     # get matrices forms
     X = info_given.sort(axis=1).as_matrix()
-    scaler = StandardScaler()
-    scaler.fit(X)
-    X = scaler.transform(X)
-    
+
+    if scale:
+        scaler = StandardScaler()
+        scaler.fit(X)
+        X = scaler.transform(X)
+    else:
+        scaler = None
+        
     y = labels_train
     features = info_given.sort(axis=1).keys()
 
     if info_test is not None:
         X_test = info_test.sort(axis=1).as_matrix()
-        X_test = scaler.transform(X_test)
+
+        if scale:
+            X_test = scaler.transform(X_test)
 
         return X, y, features, scaler, X_test
         
@@ -317,7 +349,8 @@ def predict_proba(X_train, y_train, X_test, params):
         bst = xgb.train(xgb_params, dtrain, num_rounds, evallist)
         dtest = xgb.DMatrix(X_test)
         y_test_proba = bst.predict(dtest)
-
+        clf = 0
+        
     elif 'ET' in model:
         # extratree
         clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
@@ -356,8 +389,12 @@ def predict_proba(X_train, y_train, X_test, params):
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
 
+    elif "logistic" in model:
+        clf = LogisticRegression()
+        clf.fit(X_train, y_train)
+        y_test_proba = clf.predict_proba(X_test)[:,1]
         
-    return y_test_proba
+    return y_test_proba, clf
     
     
 def kfcv_ens(info_humans, info_bots, params,
@@ -386,3 +423,39 @@ def kfcv_ens(info_humans, info_bots, params,
     roc_auc_std = np.array(roc_auc_std)
 
     return [roc_auc.mean(axis=0), roc_auc_std.mean(axis=0)]
+
+
+def recursive_feature_selection(info_humans, info_bots):
+
+    X, y, features, scaler = get_Xy(info_humans, info_bots, scale=False)
+
+    print "first feature selection by chi2 test"
+    skb = SelectKBest(chi2, k='all')
+    # skb = SelectFpr(chi2, alpha=0.005)
+    X_new = skb.fit_transform(X, y)
+
+    print "scale"
+    scaler = StandardScaler()
+    scaler.fit(X_new)
+    X_new = scaler.transform(X_new)
+
+    # skb = PCA(n_components=250)
+    # X_new = skb.fit_transform(X_new, y)
+    
+    print "second feature selection by recursive featue elimination (RFECV)"
+    clf = LogisticRegression()
+    # clf = SVC(kernel="linear")
+    rfecv = RFECV(estimator=clf, step=1,
+                  cv=cross_validation.StratifiedKFold(y, 5),
+                  scoring='roc_auc', verbose=1)
+    rfecv.fit(X_new, y)
+
+    print("Optimal number of features : %d" % rfecv.n_features_)
+    
+    return skb, rfecv
+    # Plot number of features VS. cross-validation scores
+    # plt.figure()
+    # plt.xlabel("Number of features selected")
+    # plt.ylabel("Cross validation score (nb of correct classifications)")
+    # plt.plot(range(1, len(rfecv.grid_scores_) + 1), rfecv.grid_scores_)
+    # plt.show()

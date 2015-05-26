@@ -24,9 +24,6 @@ from utils import (append_merchandises, append_countries, append_bba,
                    append_devices, append_bids_intervals, append_info,
                    write_submission)
 
-import ffs
-
-
 if len(argv) == 1:
     ##########################################################################
     # Load basic data
@@ -63,6 +60,10 @@ if len(argv) == 1:
     cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
     cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
+    cinfo_humans = cinfo_humans>0
+    cinfo_bots = cinfo_bots>0
+    cinfo_test = cinfo_test>0
+    
     cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
     info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
     info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
@@ -78,6 +79,10 @@ if len(argv) == 1:
     dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
     dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
     dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
+
+    dinfo_humans = dinfo_humans>0
+    dinfo_bots = dinfo_bots>0
+    dinfo_test = dinfo_test>0
 
     devices_appended = dinfo_humans.keys()\
                                    .union(dinfo_bots.keys())\
@@ -149,30 +154,53 @@ if len(argv) == 1:
     info_test.fillna(0, inplace=True)
 
     ##########################################################################
-    # Bid streak data
-    print "Adding bid streak data"
+    # Maximum bid streak data
+    print "Adding bid max streak data for different time frames"
+    # timeframes = [1, 5, 10, 15, 20, 40, 80]
+    
+    maxbsinfo_humans = pd.read_csv('data/max_streak_info_humans.csv', index_col=0)
+    maxbsinfo_bots = pd.read_csv('data/max_streak_info_bots.csv', index_col=0)
+    maxbsinfo_test = pd.read_csv('data/max_streak_info_test.csv', index_col=0)
 
-    for bs in [1, 5, 10, 15, 20, 40, 80]:
-    bstrinfo_humans = pd.read_csv(
-        'data/bid_streaks_info_humans.csv', index_col=0)
-    bstrinfo_bots = pd.read_csv('data/bid_streaks_info_bots.csv', index_col=0)
-    bstrinfo_test = pd.read_csv('data/bid_streaks_info_test.csv', index_col=0)
-
-    keys_bstr = bstrinfo_humans.keys()
-    info_humans = append_info(info_humans, bstrinfo_humans, keys_bstr)
-    info_bots = append_info(info_bots, bstrinfo_bots, keys_bstr)
-    info_test = append_info(info_test, bstrinfo_test, keys_bstr)
+    keys_maxbs = maxbsinfo_humans.keys()
+    info_humans = append_info(info_humans, maxbsinfo_humans, keys_maxbs)
+    info_bots = append_info(info_bots, maxbsinfo_bots, keys_maxbs)
+    info_test = append_info(info_test, maxbsinfo_test, keys_maxbs)
 
     info_humans.fillna(0, inplace=True)
     info_bots.fillna(0, inplace=True)
     info_test.fillna(0, inplace=True)
-    ##########################################################################
+    
+    # ##########################################################################
+    # # Bid streak data
+    # print "Adding bid streak data (timeframe=10)"
+    # timeframes = [1, 5, 10, 15, 20, 40, 80]
+    
+    # bstrinfo_humans = pd.read_csv(
+    #     'data/bid_streaks_info_humans.csv', index_col=0)
+    # bstrinfo_bots = pd.read_csv('data/bid_streaks_info_bots.csv', index_col=0)
+    # bstrinfo_test = pd.read_csv('data/bid_streaks_info_test.csv', index_col=0)
+
+    # keys_bstr = bstrinfo_humans.keys()
+    # info_humans = append_info(info_humans, bstrinfo_humans, keys_bstr)
+    # info_bots = append_info(info_bots, bstrinfo_bots, keys_bstr)
+    # info_test = append_info(info_test, bstrinfo_test, keys_bstr)
+
+    # info_humans.fillna(0, inplace=True)
+    # info_bots.fillna(0, inplace=True)
+    # info_test.fillna(0, inplace=True)
+    
+    # ##########################################################################
     # url data
     print "Adding url data"
     urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
     urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
     urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
 
+    urlinfo_humans = urlinfo_humans>0
+    urlinfo_bots = urlinfo_bots>0
+    urlinfo_test = urlinfo_test>0
+    
     keys_url = urlinfo_humans.keys()
     info_humans = append_info(info_humans, urlinfo_humans, keys_url)
     info_bots = append_info(info_bots, urlinfo_bots, keys_url)
@@ -181,7 +209,6 @@ if len(argv) == 1:
     info_humans.fillna(0, inplace=True)
     info_bots.fillna(0, inplace=True)
     info_test.fillna(0, inplace=True)
-
     ##########################################################################
     # bid counts for each period data
     print "Adding bid count for each period data"
@@ -236,9 +263,9 @@ if len(argv) == 1:
     info_test = info_test[keys_use]
 
     print "Saving prprocessed data.."
-    info_humans.to_csv('data/info_humans_pp1.csv')
-    info_bots.to_csv('data/info_bots_pp1.csv')
-    info_test.to_csv('data/info_test_pp1.csv')
+    # info_humans.to_csv('data/info_humans_pp1.csv')
+    # info_bots.to_csv('data/info_bots_pp1.csv')
+    # info_test.to_csv('data/info_test_pp1.csv')
 
 elif 'resume' in argv[1]:
     ##########################################################################
@@ -259,12 +286,21 @@ elif 'resume' in argv[1]:
                             index_col=0)
 
     print info_test.describe()
+
 else:
     sys.exit(1)
-
 ############################################################################
 # k-fold Cross Validaton
 ############################################################################
+
+# skb, rfecv = fb_funcs.recursive_feature_selection(info_humans, info_bots)
+# print rfecv.support_
+# print rfecv.ranking_
+# print list(info_humans.keys()[rfecv.support_])
+# print rfecv.n_features_, rfecv.grid_scores_[rfecv.n_features_]
+# sys.exit(1)
+
+
 # params for xgb
 params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
               'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
@@ -281,7 +317,7 @@ params_rf = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
              'n_jobs': -1, 'max_depth': 3}
 
 # params for logistic regression
-# params = {'model': 'logistic'}
+params_lr = {'model': 'logistic'}
 
 # params for svc
 params_svc = {'model': 'SVC', 'C': 1.0, 'gamma': 1.0}
@@ -291,28 +327,29 @@ params_kn = {'model': 'KN', 'n_neighbors': 256, 'weights': 'distance',
              'algorithm': 'auto'}
 
 params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn]
-params_ens = [params_xgb, params_et]
+params_ens = [params_et]
 
-roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                             num_cv=5, num_folds=5)
+# roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
+#                              num_cv=5, num_folds=5)
 
+# roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
+#                         columns = ['xgb', 'et', 'ens'])
+#                         # columns=['xgb', 'et', 'svc', 'rf', 'kn', 'ens'])
+# roc_aucs.to_csv('data/submi/roc_aucs.csv', float_format='%11.6f')
 
-roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
-                        columns = ['xgb', 'et', 'ens'])
-                        # columns=['xgb', 'et', 'svc', 'rf', 'kn', 'ens'])
-roc_aucs.to_csv('data/submi/roc_aucs.csv', float_format='%11.6f')
-
-print "cross validation results:"
-print roc_aucs
+# print "cross validation results:"
+# print roc_aucs
 
 ############################################################################
 # fit and predict
 ############################################################################
 
-y_test_proba, ytps\
-    = fb_funcs.fit_and_predict(info_humans, info_bots, info_test,
-                               params=params_ens)
 
+result = fb_funcs.fit_and_predict(info_humans, info_bots, info_test,
+                                  params=params_ens)
+y_test_proba = result['y_test_proba']
+ytps = result['ytps']
+    
 ############################################################################
 # submission file generation
 ############################################################################
