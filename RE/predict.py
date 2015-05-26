@@ -151,6 +151,8 @@ if len(argv) == 1:
     ##########################################################################
     # Bid streak data
     print "Adding bid streak data"
+
+    for bs in [1, 5, 10, 15, 20, 40, 80]:
     bstrinfo_humans = pd.read_csv(
         'data/bid_streaks_info_humans.csv', index_col=0)
     bstrinfo_bots = pd.read_csv('data/bid_streaks_info_bots.csv', index_col=0)

@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     elif 'bid-streaks' in argv[1]:
 
-        for tf in [1, 5, 10, 15, 20]:
+        for tf in [40, 80]:
             btf = tf+0.1
             # bots
             bid_streaks_bots = gather_bid_streaks(
@@ -224,7 +224,7 @@ if __name__ == "__main__":
             bid_streaks_test.to_csv(
                 'data/bid_streaks_info_test_%d.csv' %tf, index_label='bidder_id')
         
-    elif 'combine' in argv[1]:
+    elif 'combine_nbs' in argv[1]:
 
         # combine two columns of the sametime info
         nbsinfo_humans = pd.read_csv('data/num_bids_sametime_info_humans.csv',
@@ -252,3 +252,38 @@ if __name__ == "__main__":
             'data/num_bids_sametime_info_bots.csv', index_label='bidder_id')
         nbsinfo_test.to_csv(
             'data/num_bids_sametime_info_test.csv', index_label='bidder_id')
+
+    elif 'combine_bstr' in argv[1]:
+        bstrcomb_humans = []
+        bstrcomb_bots = []
+        bstrcomb_test = []
+        
+        # combine bid streak data: concat only the first column (longest streak)
+        tfs = [1, 5, 10, 15, 20, 40, 80]
+        for bs in tfs:
+            print bs
+            bstrinfo_humans = pd.read_csv('data/bid_streaks_info_humans_%d.csv' %bs,
+                                         index_col=0)
+            bstrinfo_bots = pd.read_csv('data/bid_streaks_info_bots_%d.csv' %bs,
+                                       index_col=0)
+            bstrinfo_test = pd.read_csv('data/bid_streaks_info_test_%d.csv' %bs,
+                                       index_col=0)
+
+            bstrcomb_humans.append(bstrinfo_humans.iloc[:,0])
+            bstrcomb_bots.append(bstrinfo_bots.iloc[:,0])
+            bstrcomb_test.append(bstrinfo_test.iloc[:,0])
+
+        bstrcomb_humans = pd.concat(bstrcomb_humans, axis=1)
+        bstrcomb_bots = pd.concat(bstrcomb_bots, axis=1)
+        bstrcomb_test = pd.concat(bstrcomb_test, axis=1)
+
+        bstrcomb_humans.columns = map(lambda x: 'streak_'+ str(x), tfs)
+        bstrcomb_bots.columns = map(lambda x: 'streak_'+ str(x), tfs)
+        bstrcomb_test.columns = map(lambda x: 'streak_'+ str(x), tfs)
+
+        bstrcomb_humans.to_csv('data/max_streak_info_humans.csv',
+                               index_label='bidder_id')
+        bstrcomb_bots.to_csv('data/max_streak_info_bots.csv',
+                               index_label='bidder_id')
+        bstrcomb_test.to_csv('data/max_streak_info_test.csv',
+                               index_label='bidder_id')
