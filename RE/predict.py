@@ -267,6 +267,14 @@ if len(argv) == 1:
     # info_bots.to_csv('data/info_bots_pp1.csv')
     # info_test.to_csv('data/info_test_pp1.csv')
 
+    # Feature selection by chi2 test and recursive featuer elimination
+    skb, rfecv = fb_funcs.recursive_feature_selection(info_humans, info_bots)
+    print rfecv.support_
+    print rfecv.ranking_
+    print list(info_humans.keys()[rfecv.support_])
+    print rfecv.n_features_, rfecv.grid_scores_[rfecv.n_features_]
+    sys.exit(1)
+    
 elif 'resume' in argv[1]:
     ##########################################################################
     # Save/Load preprocessed data
@@ -293,14 +301,6 @@ else:
 # k-fold Cross Validaton
 ############################################################################
 
-# skb, rfecv = fb_funcs.recursive_feature_selection(info_humans, info_bots)
-# print rfecv.support_
-# print rfecv.ranking_
-# print list(info_humans.keys()[rfecv.support_])
-# print rfecv.n_features_, rfecv.grid_scores_[rfecv.n_features_]
-# sys.exit(1)
-
-
 # params for xgb
 params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
               'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
@@ -308,12 +308,12 @@ params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
 
 # params for et
 params_et = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
-            'criterion': 'gini', 'plot_importance': False, 'verbose': 0,
+            'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
             'n_jobs': 2}
 
 # params for RF
 params_rf = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
-             'criterion': 'gini', 'plot_importance': False, 'verbose': 0,
+             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
              'n_jobs': -1, 'max_depth': 3}
 
 # params for logistic regression
@@ -327,18 +327,17 @@ params_kn = {'model': 'KN', 'n_neighbors': 256, 'weights': 'distance',
              'algorithm': 'auto'}
 
 params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn]
-params_ens = [params_et]
+params_ens = [params_xgb, params_et]
 
-# roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-#                              num_cv=5, num_folds=5)
+roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
+                             num_cv=1, num_folds=5)
 
-# roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
-#                         columns = ['xgb', 'et', 'ens'])
-#                         # columns=['xgb', 'et', 'svc', 'rf', 'kn', 'ens'])
-# roc_aucs.to_csv('data/submi/roc_aucs.csv', float_format='%11.6f')
+roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
+                        columns = map(lambda x: x['model'], params_ens)+['ENS'])
+roc_aucs.to_csv('data/submi/roc_aucs.csv', float_format='%11.6f')
 
-# print "cross validation results:"
-# print roc_aucs
+print "cross validation results:"
+print roc_aucs
 
 ############################################################################
 # fit and predict

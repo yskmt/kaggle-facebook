@@ -180,23 +180,11 @@ def fit_and_predict(info_humans, info_bots, info_test,
         = get_Xy(info_humans, info_bots, info_test)
 
     for mn in range(num_models):
-        ytp, clf = predict_proba(X_train, y_train, X_test, params[mn])
-        ytps.append(ytp)
-
-        if params[mn]['model'] == 'ET': 
-            importances = clf.feature_importances_
-            std = np.std([tree.feature_importances_ for tree in clf.estimators_],
-                         axis=0)
-            indices = np.argsort(importances)[::-1]
-
-            # Print the feature ranking
-            print("Feature ranking:")
-            for f in range(min(len(features), 40)):
-                print("%d. feature %d: %s = (%f)"
-                      % (f, indices[f], features[indices[f]], importances[indices[f]]))
-
-            print list((features[indices]))[:40]
-            result['features'] = list((features[indices]))
+        pp_result = predict_proba(X_train, y_train, X_test, params[mn])
+        ytps.append(pp_result['y_test_proba'])
+        # feature importance by ET or RF
+        if 'indices_ranking' in pp_result.keys():
+            result['features'] = list((features[pp_result['indices_ranking']]))
         
     ytps = np.array(ytps)
     # ensemble!
@@ -311,7 +299,8 @@ def predict_cv_ens(info_humans, info_bots, params,
 
         ytps = []
         for mn in range(len(params)):
-            ytps.append(predict_proba(X_train, y_train, X_test, params[mn]))
+            result_pp = predict_proba(X_train, y_train, X_test, params[mn])
+            ytps.append(result_pp['y_test_proba'])
             fpr, tpr, thresholds = roc_curve(y_test, ytps[mn])
             roc_auc[n_cv, mn] = auc(fpr, tpr)
 
@@ -330,6 +319,8 @@ def predict_cv_ens(info_humans, info_bots, params,
 
 def predict_proba(X_train, y_train, X_test, params):
 
+    # define output dict
+    result = {}
     model = params['model']
 
     if 'XGB' in model:
@@ -363,6 +354,14 @@ def predict_proba(X_train, y_train, X_test, params):
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
 
+        # feature importance
+        importances = clf.feature_importances_
+        std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+                     axis=0)
+        indices = np.argsort(importances)[::-1]
+        # Print the feature ranking
+        result['indices_ranking'] = indices
+        
     elif "RF" in model:
         clf = RandomForestClassifier(n_estimators=params['n_estimators'],
                                      n_jobs=params['n_jobs'],
@@ -394,7 +393,10 @@ def predict_proba(X_train, y_train, X_test, params):
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
         
-    return y_test_proba, clf
+    result['y_test_proba'] = y_test_proba
+    result['clf'] = clf
+
+    return result
     
     
 def kfcv_ens(info_humans, info_bots, params,
@@ -430,7 +432,7 @@ def recursive_feature_selection(info_humans, info_bots):
     X, y, features, scaler = get_Xy(info_humans, info_bots, scale=False)
 
     print "first feature selection by chi2 test"
-    skb = SelectKBest(chi2, k='all')
+    skb = SelectKBest(chi2, k=500)
     # skb = SelectFpr(chi2, alpha=0.005)
     X_new = skb.fit_transform(X, y)
 
