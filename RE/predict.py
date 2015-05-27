@@ -54,46 +54,46 @@ if len(argv) == 1:
     info_test = append_merchandises(info_test, drop=True)
 
     ##########################################################################
-    # Country data
-    print "Adding country data..."
-    cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
-    cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
-    cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
+    # # Country data
+    # print "Adding country data..."
+    # cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
+    # cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
+    # cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
-    cinfo_humans = cinfo_humans>0
-    cinfo_bots = cinfo_bots>0
-    cinfo_test = cinfo_test>0
+    # cinfo_humans = cinfo_humans>0
+    # cinfo_bots = cinfo_bots>0
+    # cinfo_test = cinfo_test>0
     
-    cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
-    info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
-    info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
-    info_test = append_countries(info_test, cinfo_test, cts_appended)
+    # cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
+    # info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
+    # info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
+    # info_test = append_countries(info_test, cinfo_test, cts_appended)
 
-    info_humans.fillna(0, inplace=True)
-    info_bots.fillna(0, inplace=True)
-    info_test.fillna(0, inplace=True)
+    # info_humans.fillna(0, inplace=True)
+    # info_bots.fillna(0, inplace=True)
+    # info_test.fillna(0, inplace=True)
 
-    # ##########################################################################
-    # Device data
-    print "Adding devices data"
-    dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
-    dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
-    dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
+    # # ##########################################################################
+    # # Device data
+    # print "Adding devices data"
+    # dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
+    # dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
+    # dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
 
-    dinfo_humans = dinfo_humans>0
-    dinfo_bots = dinfo_bots>0
-    dinfo_test = dinfo_test>0
+    # dinfo_humans = dinfo_humans>0
+    # dinfo_bots = dinfo_bots>0
+    # dinfo_test = dinfo_test>0
 
-    devices_appended = dinfo_humans.keys()\
-                                   .union(dinfo_bots.keys())\
-                                   .union(dinfo_test.keys())
-    info_humans = append_devices(info_humans, dinfo_humans, devices_appended)
-    info_bots = append_devices(info_bots, dinfo_bots, devices_appended)
-    info_test = append_devices(info_test, dinfo_test, devices_appended)
+    # devices_appended = dinfo_humans.keys()\
+    #                                .union(dinfo_bots.keys())\
+    #                                .union(dinfo_test.keys())
+    # info_humans = append_devices(info_humans, dinfo_humans, devices_appended)
+    # info_bots = append_devices(info_bots, dinfo_bots, devices_appended)
+    # info_test = append_devices(info_test, dinfo_test, devices_appended)
 
-    info_humans.fillna(0, inplace=True)
-    info_bots.fillna(0, inplace=True)
-    info_test.fillna(0, inplace=True)
+    # info_humans.fillna(0, inplace=True)
+    # info_bots.fillna(0, inplace=True)
+    # info_test.fillna(0, inplace=True)
 
     ##########################################################################
     # Bids count by auction data
@@ -106,7 +106,7 @@ if len(argv) == 1:
     min_bba = np.min([bbainfo_humans.shape[1],
                       bbainfo_bots.shape[1],
                       bbainfo_test.shape[1]])
-    min_bba = 100
+    min_bba = 1
 
     info_humans = append_bba(info_humans, bbainfo_humans, min_bba)
     info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
@@ -190,25 +190,25 @@ if len(argv) == 1:
     # info_bots.fillna(0, inplace=True)
     # info_test.fillna(0, inplace=True)
     
-    ##########################################################################
-    # url data
-    print "Adding url data"
-    urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
-    urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
-    urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+    # ##########################################################################
+    # # url data
+    # print "Adding url data"
+    # urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+    # urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+    # urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
 
-    urlinfo_humans = urlinfo_humans>0
-    urlinfo_bots = urlinfo_bots>0
-    urlinfo_test = urlinfo_test>0
+    # urlinfo_humans = urlinfo_humans>0
+    # urlinfo_bots = urlinfo_bots>0
+    # urlinfo_test = urlinfo_test>0
     
-    keys_url = urlinfo_humans.keys()
-    info_humans = append_info(info_humans, urlinfo_humans, keys_url)
-    info_bots = append_info(info_bots, urlinfo_bots, keys_url)
-    info_test = append_info(info_test, urlinfo_test, keys_url)
+    # keys_url = urlinfo_humans.keys()
+    # info_humans = append_info(info_humans, urlinfo_humans, keys_url)
+    # info_bots = append_info(info_bots, urlinfo_bots, keys_url)
+    # info_test = append_info(info_test, urlinfo_test, keys_url)
 
-    info_humans.fillna(0, inplace=True)
-    info_bots.fillna(0, inplace=True)
-    info_test.fillna(0, inplace=True)
+    # info_humans.fillna(0, inplace=True)
+    # info_bots.fillna(0, inplace=True)
+    # info_test.fillna(0, inplace=True)
 
     ##########################################################################
     # bid counts for each period data
@@ -259,9 +259,20 @@ if len(argv) == 1:
     # keys_use = keys_all
 
     # Feature selection by filtering!
-    keys_use = fb_funcs.filter_features(info_humans, info_bots)
+    keys_use = fb_funcs.filter_features(info_humans, info_bots, k=100)
     keys_use = list(keys_use[1])
 
+    keys_use = ['interval_64', 'interval_128', 'interval_8',
+                'interval_32', 'ave_num_bids', 'interval_4',
+                'interval_16', 'ave_num_devices', 'bba_1', 'streak_1',
+                'num_devices', 'interval_2', 'streak_80', 'streak_40',
+                'streak_15', 'num_bids', 'ave_num_urls',
+                'num_bids_sametime_diffauc', 'streak_10', 'streak_5',
+                'num_urls', 'ave_num_aucs', 'ave_num_countries',
+                'streak_20', 'interval_1', 'num_bids_sametime',
+                'num_countries', 'ave_num_ips', 'num_aucs', 'num_ips',
+                'mobile', 'num_bids_sametime_sameauc', 'num_periods']
+    
     # # 0.959142 +- 0.021752
     # keys_use = ['streak_1', 'uk', 'interval_64', 'streak_5',
     #             'interval_8', 'streak_15', 'interval_16', 'interval_128', 'bba_4',
@@ -342,30 +353,50 @@ params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
               'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 1.0}
 
 # params for et
-params_et = {'model': 'ET', 'n_estimators': 3000, 'max_features': 'auto',
+params_et = {'model': 'ET', 'n_estimators': 2000, 'max_features': 'auto',
             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-            'n_jobs': 2}
+             'n_jobs': 2, 'max_depth': None}
 
 # params for RF
 params_rf = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
              'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
              'n_jobs': -1, 'max_depth': 3}
+# 2000, depth=None, auto
 
 # params for logistic regression
-params_lr = {'model': 'logistic'}
+params_lr = {'model': 'logistic', 'penalty':'l2', 'C':1.0}
+# l1 0.1
 
 # params for svc
-params_svc = {'model': 'SVC', 'C': 1.0, 'gamma': 1.0}
+params_svc = {'model': 'SVC', 'C': 1e4, 'gamma': 1e-4}
+# 0.1, 10 for standardscaling
 
 # params for kneighbor
 params_kn = {'model': 'KN', 'n_neighbors': 256, 'weights': 'distance',
              'algorithm': 'auto'}
+# 64 for log, standard
 
 params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn]
-params_ens = [params_xgb, params_et]
+params_ens = [params_xgb]
 
-roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                             num_cv=10, num_folds=10)
+for scale in ['log', 'standard']:
+    for penalty in ['l2', 'l1']:
+        for C in [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]:
+
+
+            params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
+                          'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
+                          'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0,
+                          'gamma': 1.0}
+            
+            roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
+                                         num_cv=5, num_folds=5, scale=scale)
+
+rres = np.array(rres)
+nm = np.argmax(rres[:,2])
+print rres[nm]
+rres = pd.DataFrame(np.array(rres))
+
 
 roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
                         columns = map(lambda x: x['model'], params_ens)+['ENS'])
@@ -383,7 +414,10 @@ result = fb_funcs.fit_and_predict(info_humans, info_bots, info_test,
                                   params=params_ens)
 y_test_proba = result['y_test_proba']
 ytps = result['ytps']
-    
+
+# feature_importances = pd.DataFrame(np.array([result['features'],
+                                             # result['importances']]).T)
+
 ############################################################################
 # submission file generation
 ############################################################################

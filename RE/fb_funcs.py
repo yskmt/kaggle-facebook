@@ -36,7 +36,7 @@ import xgboost as xgb
 
 
 def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
-               params=None):
+               params=None, scale=None):
     """
     prediction by undersampling
 
@@ -45,7 +45,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
 
     model = params['model']
     
-    X, y, features = get_Xy(info_humans, info_bots)
+    X, y, features = get_Xy(info_humans, info_bots, scale=scale)
 
     # split for cv
     kf = cross_validation.StratifiedKFold(
@@ -185,6 +185,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
         # feature importance by ET or RF
         if 'indices_ranking' in pp_result.keys():
             result['features'] = list((features[pp_result['indices_ranking']]))
+            result['importances'] = pp_result['importances']
         
     ytps = np.array(ytps)
     # ensemble!
@@ -254,10 +255,13 @@ def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     # get matrices forms
     X = info_given.sort(axis=1).as_matrix()
 
-    if scale:
+    if scale=='standard':
         scaler = StandardScaler()
         scaler.fit(X)
         X = scaler.transform(X)
+    elif scale == 'log':
+        X = np.log(1+X)
+        scaler = None
     else:
         scaler = None
         
@@ -267,22 +271,24 @@ def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     if info_test is not None:
         X_test = info_test.sort(axis=1).as_matrix()
 
-        if scale:
+        if scale == 'standard':
             X_test = scaler.transform(X_test)
+        elif scale == 'log':
+            X_test = np.log(1+X_test)
 
         return X, y, features, scaler, X_test
         
     return X, y, features, scaler
 
 def predict_cv_ens(info_humans, info_bots, params,
-                   n_folds=5):
+                   n_folds=5, scale=None):
     """
     prediction by ensemble
 
     p_valid: validation set fraction
     """
 
-    X, y, features, scaler = get_Xy(info_humans, info_bots)
+    X, y, features, scaler = get_Xy(info_humans, info_bots, scale=scale)
     
     # split for cv
     kf = cross_validation.StratifiedKFold(
@@ -345,6 +351,7 @@ def predict_proba(X_train, y_train, X_test, params):
     elif 'ET' in model:
         # extratree
         clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
+                                   max_depth=params['max_depth'],
                                    n_jobs=params['n_jobs'],
                                    max_features=params['max_features'],
                                    criterion=params['criterion'],
@@ -359,7 +366,8 @@ def predict_proba(X_train, y_train, X_test, params):
         std = np.std([tree.feature_importances_ for tree in clf.estimators_],
                      axis=0)
         indices = np.argsort(importances)[::-1]
-        # Print the feature ranking
+
+        result['importances'] = importances[indices]
         result['indices_ranking'] = indices
         
     elif "RF" in model:
@@ -389,7 +397,8 @@ def predict_proba(X_train, y_train, X_test, params):
         y_test_proba = clf.predict_proba(X_test)[:,1]
 
     elif "logistic" in model:
-        clf = LogisticRegression()
+        clf = LogisticRegression(penalty=params['penalty'],
+                                 C=params['C'])
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
         
@@ -400,7 +409,7 @@ def predict_proba(X_train, y_train, X_test, params):
     
     
 def kfcv_ens(info_humans, info_bots, params,
-             num_cv=5, num_folds=5):
+             num_cv=5, num_folds=5, scale=None):
     """
     k-fold cross validation
     """
@@ -415,7 +424,7 @@ def kfcv_ens(info_humans, info_bots, params,
     
     for i in range(num_cv):
         ra = predict_cv_ens(info_humans, info_bots, params,
-                            n_folds=num_folds)
+                            n_folds=num_folds, scale=scale)
 
         print ra.mean(axis=0), ra.std(axis=0)
         roc_auc.append(ra.mean(axis=0))
@@ -471,7 +480,7 @@ def recursive_feature_selection(info_humans, info_bots):
     # plt.show()
 
 
-def filter_features(info_humans, info_bots):
+def filter_features(info_humans, info_bots, k=200):
     """
     Carry out 2-layer feature filtering
     """
@@ -481,7 +490,7 @@ def filter_features(info_humans, info_bots):
     X_new = vt.fit_transform(X)
     features_1 = features[vt.get_support()]
     
-    skb = SelectKBest(chi2, k=200)
+    skb = SelectKBest(chi2, k=min(k, len(features_1)))
     X_new = skb.fit_transform(X_new, y)
     features_2 = features_1[skb.get_support()]
 

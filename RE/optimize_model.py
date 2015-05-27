@@ -16,14 +16,16 @@ from sklearn.metrics import auc
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 import xgboost as xgb
 
-from fb_funcs import (append_merchandise, predict_cv,
-                      fit_and_predict, append_info,
-                      append_countries, keys_sig, keys_na,
-                      append_bba, append_device, append_bids_intervals)
+import fb_funcs
+from fb_funcs import predict_cv, fit_and_predict
+from utils import (append_merchandises, append_countries, append_bba,
+                   append_devices, append_bids_intervals, append_info,
+                   write_submission)
 
-############################################################################
-# Load bsic data
-############################################################################
+
+##########################################################################
+# Load basic data
+##########################################################################
 print "Loading postprocessed data files..."
 
 humansfile = 'data/info_humans.csv'
@@ -38,54 +40,60 @@ num_humans = info_humans.shape[0]
 num_bots = info_bots.shape[0]
 num_test = info_test.shape[0]
 
-
-############################################################################
+##########################################################################
 # Data appending
-############################################################################
+##########################################################################
 
-############################################################################
+##########################################################################
 # Merchandise data
 print "Adding merchandise data..."
-info_humans = append_merchandise(info_humans, drop=True)
-info_bots = append_merchandise(info_bots, drop=True)
-info_test = append_merchandise(info_test, drop=True)
+info_humans = append_merchandises(info_humans, drop=True)
+info_bots = append_merchandises(info_bots, drop=True)
+info_test = append_merchandises(info_test, drop=True)
 
-############################################################################
-# Country data
-print "Adding country data..."
-cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
-cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
-cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
+##########################################################################
+# # Country data
+# print "Adding country data..."
+# cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
+# cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
+# cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
-# cts_appended = keys_sig + keys_na
-cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
-info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
-info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
-info_test = append_countries(info_test, cinfo_test, cts_appended)
+# cinfo_humans = cinfo_humans>0
+# cinfo_bots = cinfo_bots>0
+# cinfo_test = cinfo_test>0
 
-info_humans.fillna(0, inplace=True)
-info_bots.fillna(0, inplace=True)
-info_test.fillna(0, inplace=True)
+# cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
+# info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
+# info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
+# info_test = append_countries(info_test, cinfo_test, cts_appended)
 
-############################################################################
-# Device data
-print "Adding devices data"
-dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
-dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
-dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
+# info_humans.fillna(0, inplace=True)
+# info_bots.fillna(0, inplace=True)
+# info_test.fillna(0, inplace=True)
 
-devices_appended = dinfo_humans.keys()\
-                               .union(dinfo_bots.keys())\
-                               .union(dinfo_test.keys())
-info_humans = append_device(info_humans, dinfo_humans, devices_appended)
-info_bots = append_device(info_bots, dinfo_bots, devices_appended)
-info_test = append_device(info_test, dinfo_test, devices_appended)
+# # ##########################################################################
+# # Device data
+# print "Adding devices data"
+# dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
+# dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
+# dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
 
-info_humans.fillna(0, inplace=True)
-info_bots.fillna(0, inplace=True)
-info_test.fillna(0, inplace=True)
+# dinfo_humans = dinfo_humans>0
+# dinfo_bots = dinfo_bots>0
+# dinfo_test = dinfo_test>0
 
-############################################################################
+# devices_appended = dinfo_humans.keys()\
+#                                .union(dinfo_bots.keys())\
+#                                .union(dinfo_test.keys())
+# info_humans = append_devices(info_humans, dinfo_humans, devices_appended)
+# info_bots = append_devices(info_bots, dinfo_bots, devices_appended)
+# info_test = append_devices(info_test, dinfo_test, devices_appended)
+
+# info_humans.fillna(0, inplace=True)
+# info_bots.fillna(0, inplace=True)
+# info_test.fillna(0, inplace=True)
+
+##########################################################################
 # Bids count by auction data
 print "Adding bids-count-by-auction data..."
 bbainfo_humans = pd.read_csv('data/bba_info_humans.csv', index_col=0)
@@ -96,18 +104,19 @@ bbainfo_test = pd.read_csv('data/bba_info_test.csv', index_col=0)
 min_bba = np.min([bbainfo_humans.shape[1],
                   bbainfo_bots.shape[1],
                   bbainfo_test.shape[1]])
-min_bba = 100
+min_bba = 1
 
 info_humans = append_bba(info_humans, bbainfo_humans, min_bba)
 info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
 info_test = append_bba(info_test, bbainfo_test, min_bba)
 
-############################################################################
-# Bids interval data
-print "Adding bids interval data"
-biinfo_humans = pd.read_csv('data/bids_intervals_info_humans.csv', index_col=0)
-biinfo_bots = pd.read_csv('data/bids_intervals_info_bots.csv', index_col=0)
-biinfo_test = pd.read_csv('data/bids_intervals_info_test.csv', index_col=0)
+##########################################################################
+# Bids interval data (grouped)
+print "Adding bids interval data (grouped)"
+biinfo_humans = pd.read_csv(
+    'data/bids_gintervals_info_humans.csv', index_col=0)
+biinfo_bots = pd.read_csv('data/bids_gintervals_info_bots.csv', index_col=0)
+biinfo_test = pd.read_csv('data/bids_gintervals_info_test.csv', index_col=0)
 
 bids_intervals_appended = biinfo_humans.keys()\
                                        .union(biinfo_bots.keys())\
@@ -123,13 +132,15 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-############################################################################
-# Numer of same-time-bids data
+##########################################################################
+# Number of same-time-bids data
 print "Adding same-time bids data"
 nbsinfo_humans = pd.read_csv(
     'data/num_bids_sametime_info_humans.csv', index_col=0)
-nbsinfo_bots = pd.read_csv('data/num_bids_sametime_info_bots.csv', index_col=0)
-nbsinfo_test = pd.read_csv('data/num_bids_sametime_info_test.csv', index_col=0)
+nbsinfo_bots = pd.read_csv(
+    'data/num_bids_sametime_info_bots.csv', index_col=0)
+nbsinfo_test = pd.read_csv(
+    'data/num_bids_sametime_info_test.csv', index_col=0)
 
 keys_nbs = nbsinfo_humans.keys()
 info_humans = append_info(info_humans, nbsinfo_humans, keys_nbs)
@@ -140,40 +151,65 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-############################################################################
-# Bid streak data
-print "Adding bid streak data"
-bstrinfo_humans = pd.read_csv('data/bid_streaks_info_humans.csv', index_col=0)
-bstrinfo_bots = pd.read_csv('data/bid_streaks_info_bots.csv', index_col=0)
-bstrinfo_test = pd.read_csv('data/bid_streaks_info_test.csv', index_col=0)
+##########################################################################
+# Maximum bid streak data
+print "Adding bid max streak data for different time frames"
+# timeframes = [1, 5, 10, 15, 20, 40, 80]
 
-keys_bstr = bstrinfo_humans.keys()
-info_humans = append_info(info_humans, bstrinfo_humans, keys_bstr)
-info_bots = append_info(info_bots, bstrinfo_bots, keys_bstr)
-info_test = append_info(info_test, bstrinfo_test, keys_bstr)
+maxbsinfo_humans = pd.read_csv('data/max_streak_info_humans.csv', index_col=0)
+maxbsinfo_bots = pd.read_csv('data/max_streak_info_bots.csv', index_col=0)
+maxbsinfo_test = pd.read_csv('data/max_streak_info_test.csv', index_col=0)
 
-info_humans.fillna(0, inplace=True)
-info_bots.fillna(0, inplace=True)
-info_test.fillna(0, inplace=True)
-
-############################################################################
-# url data
-print "Adding url data"
-urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
-urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
-urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
-
-keys_url = urlinfo_humans.keys()
-info_humans = append_info(info_humans, urlinfo_humans, keys_url)
-info_bots = append_info(info_bots, urlinfo_bots, keys_url)
-info_test = append_info(info_test, urlinfo_test, keys_url)
+keys_maxbs = maxbsinfo_humans.keys()
+info_humans = append_info(info_humans, maxbsinfo_humans, keys_maxbs)
+info_bots = append_info(info_bots, maxbsinfo_bots, keys_maxbs)
+info_test = append_info(info_test, maxbsinfo_test, keys_maxbs)
 
 info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-############################################################################
-# bid counts for each period
+# ##########################################################################
+# # Bid streak data
+# print "Adding bid streak data (timeframe=10)"
+# timeframes = [1, 5, 10, 15, 20, 40, 80]
+
+# bstrinfo_humans = pd.read_csv(
+#     'data/bid_streaks_info_humans.csv', index_col=0)
+# bstrinfo_bots = pd.read_csv('data/bid_streaks_info_bots.csv', index_col=0)
+# bstrinfo_test = pd.read_csv('data/bid_streaks_info_test.csv', index_col=0)
+
+# keys_bstr = bstrinfo_humans.keys()
+# info_humans = append_info(info_humans, bstrinfo_humans, keys_bstr)
+# info_bots = append_info(info_bots, bstrinfo_bots, keys_bstr)
+# info_test = append_info(info_test, bstrinfo_test, keys_bstr)
+
+# info_humans.fillna(0, inplace=True)
+# info_bots.fillna(0, inplace=True)
+# info_test.fillna(0, inplace=True)
+
+# ##########################################################################
+# # url data
+# print "Adding url data"
+# urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+# urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+# urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+
+# urlinfo_humans = urlinfo_humans>0
+# urlinfo_bots = urlinfo_bots>0
+# urlinfo_test = urlinfo_test>0
+
+# keys_url = urlinfo_humans.keys()
+# info_humans = append_info(info_humans, urlinfo_humans, keys_url)
+# info_bots = append_info(info_bots, urlinfo_bots, keys_url)
+# info_test = append_info(info_test, urlinfo_test, keys_url)
+
+# info_humans.fillna(0, inplace=True)
+# info_bots.fillna(0, inplace=True)
+# info_test.fillna(0, inplace=True)
+
+##########################################################################
+# bid counts for each period data
 print "Adding bid count for each period data"
 bcepinfo_humans = pd.read_csv('data/info_humans_bp.csv', index_col=0)
 bcepinfo_bots = pd.read_csv('data/info_bots_bp.csv', index_col=0)
@@ -188,9 +224,9 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-############################################################################
+##########################################################################
 # Outlier dropping
-############################################################################
+##########################################################################
 print "Removing outliers..."
 
 bots_outliers = [
@@ -202,10 +238,9 @@ bots_outliers = [
 ]
 info_bots.drop(bots_outliers, inplace=True)
 
-
-############################################################################
+##########################################################################
 # Feature selection
-############################################################################
+##########################################################################
 print "Selecting features..."
 
 # first dropping merchandise feature...
@@ -219,16 +254,39 @@ info_humans.fillna(0, inplace=True)
 info_bots.fillna(0, inplace=True)
 info_test.fillna(0, inplace=True)
 
-keys_use = keys_all
+# keys_use = keys_all
+
+# Feature selection by filtering!
+keys_use = fb_funcs.filter_features(info_humans, info_bots, k=100)
+keys_use = list(keys_use[1])
+
+keys_use = ['interval_64', 'interval_128', 'interval_8',
+            'interval_32', 'ave_num_bids', 'interval_4',
+            'interval_16', 'ave_num_devices', 'bba_1', 'streak_1',
+            'num_devices', 'interval_2', 'streak_80', 'streak_40',
+            'streak_15', 'num_bids', 'ave_num_urls',
+            'num_bids_sametime_diffauc', 'streak_10', 'streak_5',
+            'num_urls', 'ave_num_aucs', 'ave_num_countries',
+            'streak_20', 'interval_1', 'num_bids_sametime',
+            'num_countries', 'ave_num_ips', 'num_aucs', 'num_ips',
+            'mobile', 'num_bids_sametime_sameauc', 'num_periods']
 
 print "Extracting keys..."
 info_humans = info_humans[keys_use]
 info_bots = info_bots[keys_use]
 info_test = info_test[keys_use]
 
+num_features = len(keys_use)
+
+print "Saving prprocessed data.."
+info_humans.to_csv('data_pp/info_humans_%d.csv' % num_features)
+info_bots.to_csv('data_pp/info_bots_%d.csv' % num_features)
+info_test.to_csv('data_pp/info_test_%d.csv' % num_features)
+
 ############################################################################
 # optimizer
 ############################################################################
+
 
 def xgb_objective(params):
     print params
@@ -253,7 +311,7 @@ def xgb_objective(params):
 
     features = info_given.sort(axis=1).keys()
 
-    # xgboost!
+    # Xgboost!
     xgb_params = {"objective": "binary:logistic",
                   'eta': params['eta'],
                   'gamma': params['gamma'],
@@ -275,21 +333,22 @@ def xgb_objective(params):
         map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
     ind_max = np.argmax(np.array(
         map(lambda x: float(x.split('\t')[1].split(':')[1].split('+')[0]), cv_result)))
-    std_max = float(cv_result[ind_max].split('\t')[1].split(':')[1].split('+')[1])
+    std_max = float(
+        cv_result[ind_max].split('\t')[1].split(':')[1].split('+')[1])
 
     # logging
     with open('log_results_1.txt', 'a') as f:
-        f.write(str({'loss': auc_max, 'std': std_max,'status':
+        f.write(str({'loss': auc_max, 'std': std_max, 'status':
                      STATUS_OK, 'ind': ind_max}))
         f.write('\n')
 
     with open('log_params_1.txt', 'a') as f:
         f.write(str(params))
         f.write('\n')
-    
+
     return {'loss': -auc_max, 'std': std_max, 'status': STATUS_OK, 'ind': ind_max}
 
-    
+
 def optimize(trials):
     space = {
         'num_rounds': 5000,
@@ -297,8 +356,8 @@ def optimize(trials):
         'gamma': hp.quniform('gamma', 0.5, 10, 0.5),
         'max_depth': hp.quniform('max_depth', 4, 13, 1),
         'min_child_weight': hp.quniform('min_child_weight', 1, 10, 1),
-        'subsample': hp.quniform('subsample', 0.1, 1, 0.05),
-        'colsample_bytree': hp.quniform('colsample_bytree', 0.001, 1, 0.001),
+        'subsample': hp.quniform('subsample', 0.1, 1, 0.1),
+        'colsample_bytree': hp.quniform('colsample_bytree', 0.05, 1, 0.05),
         'nthread': 8,
         'silent': 1
     }
