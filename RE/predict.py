@@ -348,55 +348,34 @@ else:
 ############################################################################
 
 # params for xgb
-params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
-              'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
-              'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 1.0}
+params_xgb = {'model': 'XGB', 'colsample_bytree': 0.85, 'silent': 1,
+              'num_rounds': 2000, 'nthread': 8, 'min_child_weight': 3.0,
+              'subsample': 0.7, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 2.0}
 
 # params for et
-params_et = {'model': 'ET', 'n_estimators': 2000, 'max_features': 'auto',
+params_et = {'model': 'ET', 'n_estimators': 2000, 'max_features': None,
             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-             'n_jobs': 2, 'max_depth': None}
+             'n_jobs': 2, 'max_depth': 8}
 
 # params for RF
-params_rf = {'model': 'RF', 'n_estimators': 1000, 'max_features': 'auto',
+params_rf = {'model': 'RF', 'n_estimators': 2000, 'max_features': None,
              'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-             'n_jobs': -1, 'max_depth': 3}
-# 2000, depth=None, auto
+             'n_jobs': -1, 'max_depth': 8}
 
 # params for logistic regression
-params_lr = {'model': 'logistic', 'penalty':'l2', 'C':1.0}
-# l1 0.1
+params_lr = {'model': 'logistic', 'penalty':'l1', 'C':0.1}
 
 # params for svc
-params_svc = {'model': 'SVC', 'C': 1e4, 'gamma': 1e-4}
-# 0.1, 10 for standardscaling
+params_svc = {'model': 'SVC', 'C': 100.0, 'gamma': 0.001}
 
 # params for kneighbor
-params_kn = {'model': 'KN', 'n_neighbors': 256, 'weights': 'distance',
-             'algorithm': 'auto'}
-# 64 for log, standard
+params_kn = {'model': 'KN', 'n_neighbors': 32, 'weights': 'distance',
+             'algorithm': 'auto', 'metric': 'minkowski'}
 
-params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn]
-params_ens = [params_xgb]
+params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn, params_lr]
 
-for scale in ['log', 'standard']:
-    for penalty in ['l2', 'l1']:
-        for C in [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]:
-
-
-            params_xgb = {'model': 'XGB', 'colsample_bytree': 0.367, 'silent': 1,
-                          'num_rounds': 1000, 'nthread': 8, 'min_child_weight': 3.0,
-                          'subsample': 0.9, 'eta': 0.002, 'max_depth': 5.0,
-                          'gamma': 1.0}
-            
-            roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                                         num_cv=5, num_folds=5, scale=scale)
-
-rres = np.array(rres)
-nm = np.argmax(rres[:,2])
-print rres[nm]
-rres = pd.DataFrame(np.array(rres))
-
+roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
+                             num_cv=10, num_folds=10, scale='log')
 
 roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
                         columns = map(lambda x: x['model'], params_ens)+['ENS'])
@@ -411,7 +390,7 @@ print roc_aucs
 
 
 result = fb_funcs.fit_and_predict(info_humans, info_bots, info_test,
-                                  params=params_ens)
+                                  params=params_ens, scale='log')
 y_test_proba = result['y_test_proba']
 ytps = result['ytps']
 

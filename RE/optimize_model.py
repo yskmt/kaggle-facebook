@@ -11,7 +11,8 @@ import json
 import numpy as np
 import pandas as pd
 
-from sklearn.metrics import auc
+from sklearn.metrics import auc, roc_curve
+from sklearn import cross_validation
 
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 import xgboost as xgb
@@ -349,7 +350,7 @@ def xgb_objective(params):
     return {'loss': -auc_max, 'std': std_max, 'status': STATUS_OK, 'ind': ind_max}
 
 
-def optimize(trials):
+def optimize_xgb(trials):
     space = {
         'num_rounds': 5000,
         'eta': hp.choice('eta', [0.001, 0.002]),
@@ -363,6 +364,118 @@ def optimize(trials):
     }
 
     best = fmin(xgb_objective, space,
+                algo=tpe.suggest, trials=trials, max_evals=100)
+
+    # logging
+    with open('trials_results_1.txt', 'w') as f:
+        json.dump(trials.results, f)
+    with open('trials_trials_1.txt', 'w') as f:
+        json.dump(trials.trials, f)
+
+    print best
+
+    
+def objective(params):
+    """
+    prediction by ensemble objective
+
+    """
+
+    n_folds = params['n_folds']
+    X, y, features, scaler = fb_funcs.get_Xy(info_humans, info_bots,
+                                             scale=params['scale'])
+    
+    # split for cv
+    kf = cross_validation.StratifiedKFold(
+        y, n_folds=n_folds, shuffle=True, random_state=None)
+
+    # cv scores
+    roc_auc = np.zeros([n_folds])
+
+    n_cv = 0
+    for train_index, test_index in kf:
+        print "CV#: ", n_cv
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        result_pp = fb_funcs.predict_proba(X_train, y_train, X_test, params)
+        ytps = result_pp['y_test_proba']
+        fpr, tpr, thresholds = roc_curve(y_test, ytps)
+        roc_auc[n_cv] = auc(fpr, tpr)
+
+        # validation errors
+        fpr, tpr, thresholds = roc_curve(y_test, ytps)
+        roc_auc[n_cv] = auc(fpr, tpr)
+        
+        n_cv += 1
+
+
+    # logging
+    with open('log_results_%s.txt' %params['model'], 'a') as f:
+        f.write(str({'loss': roc_auc.mean(), 'std': roc_auc.std(),
+                     'status': STATUS_OK,}))
+        f.write('\n')
+
+    with open('log_params_%s.txt' %params['model'], 'a') as f:
+        f.write(str(params))
+        f.write('\n')
+
+        
+    return {'loss': -roc_auc.mean(), 'std': roc_auc.std(),
+            'status': STATUS_OK}
+
+    
+def optimize(trials):
+    space_lr = {
+        'model': 'logistic',
+        'penalty': hp.choice('penalty', ['l2', 'l1']),
+        'C': hp.choice('C', 10.0**np.array(range(-5, 5))),
+        'scale': hp.choice('scale', ['standard', 'log']),
+        'n_folds': 5
+    }
+
+    space_svc = {
+        'model': 'SVC',
+        'gamma': hp.choice('gamma', 10.0**np.array(range(-5, 5))),
+        'C': hp.choice('C', 10.0**np.array(range(-5, 5))),
+        'scale': hp.choice('scale', ['standard', 'log']),
+        'n_folds': 5
+    }
+
+    space_kn = {'model': 'KN',
+                'n_neighbors': hp.choice('n_neighbors', 2**np.array(range(1, 9))),
+                'weights': hp.choice('weights', ['distance', 'uniform']),
+                'metric': hp.choice('metric', ['minkowski', 'manhattan']),
+                'algorithm': 'auto',
+                'scale': hp.choice('scale', ['standard', 'log']),
+                'n_folds': 5
+    }
+
+    space_et = {'model': 'ET',
+                'n_estimators': hp.choice('n_estimators', [1000, 2000]),
+                'max_features': hp.choice('max_features', ['auto', None, 0.5, 0.25, 0.125]),
+                'criterion': hp.choice('criterion', ['gini', 'entropy']),
+                'plot_importance': False,
+                'verbose': 1,
+                'n_jobs': -1,
+                'max_depth': hp.choice('max_depth', [None, 2, 4, 8]),
+                'scale': None,
+                'n_folds': 5
+    }
+
+    space_rf = {'model': 'RF',
+                'n_estimators': hp.choice('n_estimators', [1000, 2000]),
+                'max_features': hp.choice('max_features', ['auto', None, 0.5, 0.25, 0.125]),
+                'criterion': hp.choice('criterion', ['gini', 'entropy']),
+                'plot_importance': False,
+                'verbose': 1,
+                'n_jobs': -1,
+                'max_depth': hp.choice('max_depth', [None, 2, 4, 8]),
+                'scale': None,
+                'n_folds': 5
+    }
+    
+    best = fmin(objective, space_rf,
                 algo=tpe.suggest, trials=trials, max_evals=100)
 
     # logging

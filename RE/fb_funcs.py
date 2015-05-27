@@ -150,7 +150,7 @@ def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
 
 
 def fit_and_predict(info_humans, info_bots, info_test,
-                    params, p_use=None):
+                    params, p_use=None, scale=None):
 
     # define result dict
     result = {}
@@ -177,7 +177,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
     # get matrices forms
     ytps = []
     X_train, y_train, features, scaler, X_test\
-        = get_Xy(info_humans, info_bots, info_test)
+        = get_Xy(info_humans, info_bots, info_test, scale=scale)
 
     for mn in range(num_models):
         pp_result = predict_proba(X_train, y_train, X_test, params[mn])
@@ -284,8 +284,6 @@ def predict_cv_ens(info_humans, info_bots, params,
                    n_folds=5, scale=None):
     """
     prediction by ensemble
-
-    p_valid: validation set fraction
     """
 
     X, y, features, scaler = get_Xy(info_humans, info_bots, scale=scale)
@@ -372,11 +370,12 @@ def predict_proba(X_train, y_train, X_test, params):
         
     elif "RF" in model:
         clf = RandomForestClassifier(n_estimators=params['n_estimators'],
+                                     max_depth=params['max_depth'],
                                      n_jobs=params['n_jobs'],
                                      max_features=params['max_features'],
                                      criterion=params['criterion'],
                                      verbose=params['verbose'],
-                                     max_depth=params['max_depth'])
+                                     random_state=None)
 
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
@@ -384,7 +383,8 @@ def predict_proba(X_train, y_train, X_test, params):
     elif "KN" in model:
         clf = KNeighborsClassifier(n_neighbors=params['n_neighbors'],
                                    weights=params['weights'],
-                                   algorithm=params['algorithm'])
+                                   algorithm=params['algorithm'],
+                                   metric=params['metric'])
 
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
