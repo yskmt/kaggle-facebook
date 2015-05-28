@@ -376,9 +376,10 @@ params_kn = {'model': 'KN', 'n_neighbors': 32, 'weights': 'distance',
              'algorithm': 'auto', 'metric': 'minkowski'}
 
 params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn, params_lr]
+params_ens = [params_lr]
 
 roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                             num_cv=5, num_folds=5, scale='log')
+                             num_cv=10, num_folds=10, scale='log', smote='tomek')
 
 roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
                         columns = map(lambda x: x['model'], params_ens)+['ENS'])

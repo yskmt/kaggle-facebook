@@ -7,7 +7,7 @@ author: Yusuke Sakamoto
 
 """
 
-
+import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -34,6 +34,13 @@ from sklearn.decomposition import PCA
 
 import xgboost as xgb
 
+# Under/Over sampling routines
+# https://github.com/fmfn/UnbalancedDataset/blob/master/Notebook_UnbalancedDataset.ipynb
+ubd_path = '/home/ubuntu/src/UnbalancedDataset'
+if ubd_path not in sys.path:
+    sys.path.append(ubd_path)
+
+from UnbalancedDataset import SMOTE, SMOTETomek, SMOTEENN
 
 def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
                params=None, scale=None):
@@ -241,7 +248,7 @@ def fit_and_predict(info_humans, info_bots, info_test,
 def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     num_humans = len(info_humans)
     num_bots = len(info_bots)
-
+    
     # combine humans and bots data to create given data
     info_given = pd.concat([info_humans, info_bots], axis=0)
     labels_train = np.hstack((np.zeros(num_humans), np.ones(num_bots)))
@@ -268,6 +275,16 @@ def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     y = labels_train
     features = info_given.sort(axis=1).keys()
 
+    # # SMOTE oversampling
+    # ratio = float(len(info_humans))/float(len(info_bots))
+    # smote = SMOTE(ratio=ratio, verbose=True)
+    # X, y = smote.fit_transform(X, y)
+
+    # # shuffle just in case
+    # index_sh = np.random.choice(len(y), len(y), replace=False)
+    # X = X[index_sh]
+    # y = y[index_sh]
+    
     if info_test is not None:
         X_test = info_test.sort(axis=1).values.astype(float)
 
@@ -281,7 +298,7 @@ def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     return X, y, features, scaler
 
 def predict_cv_ens(info_humans, info_bots, params,
-                   n_folds=5, scale=None):
+                   n_folds=5, scale=None, smote=False):
     """
     prediction by ensemble
     """
@@ -301,6 +318,22 @@ def predict_cv_ens(info_humans, info_bots, params,
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
+        if smote:
+            ratio = float(np.count_nonzero(y==0))/float(np.count_nonzero(y==1))
+
+            if smote=='enn':
+                _smote = SMOTEENN(ratio=ratio, verbose=True)
+            elif smote=='tomek':
+                _smote = SMOTETomek(ratio=ratio, verbose=True)
+            else:
+                _smote = SMOTE(ratio=ratio, verbose=True, kind=smote)
+            X_train, y_train = _smote.fit_transform(X_train, y_train)
+            
+            # shuffle just in case
+            index_sh = np.random.choice(len(y_train), len(y_train), replace=False)
+            X_train = X_train[index_sh]
+            y_train = y_train[index_sh]
+        
         ytps = []
         for mn in range(len(params)):
             result_pp = predict_proba(X_train, y_train, X_test, params[mn])
@@ -412,7 +445,7 @@ def predict_proba(X_train, y_train, X_test, params):
     
     
 def kfcv_ens(info_humans, info_bots, params,
-             num_cv=5, num_folds=5, scale=None):
+             num_cv=5, num_folds=5, scale=None, smote=False):
     """
     k-fold cross validation
     """
@@ -427,7 +460,7 @@ def kfcv_ens(info_humans, info_bots, params,
     
     for i in range(num_cv):
         ra = predict_cv_ens(info_humans, info_bots, params,
-                            n_folds=num_folds, scale=scale)
+                            n_folds=num_folds, scale=scale, smote=smote)
 
         print ra.mean(axis=0), ra.std(axis=0)
         roc_auc.append(ra.mean(axis=0))
