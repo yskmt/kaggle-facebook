@@ -24,6 +24,13 @@ from fb_funcs import predict_cv, fit_and_predict
 from utils import (append_merchandises, append_countries, append_bba,
                    append_devices, append_bids_intervals, append_info,
                    write_submission)
+# Under/Over sampling routines
+# https://github.com/fmfn/UnbalancedDataset/blob/master/Notebook_UnbalancedDataset.ipynb
+ubd_path = '/home/ubuntu/src/UnbalancedDataset'
+if ubd_path not in sys.path:
+    sys.path.append(ubd_path)
+
+from UnbalancedDataset import SMOTE, SMOTETomek, SMOTEENN
 
 
 ##########################################################################
@@ -147,7 +154,8 @@ def objective(params):
     """
 
     n_folds = params['n_folds']
-
+    smote = params['smote']
+    
     X, y, features, scaler = fb_funcs.get_Xy(info_humans, info_bots,
                                              scale=params['scale'])
 
@@ -164,6 +172,22 @@ def objective(params):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
+        if smote:
+            ratio = float(np.count_nonzero(y==0))/float(np.count_nonzero(y==1))
+
+            if smote=='enn':
+                _smote = SMOTEENN(ratio=ratio, verbose=True)
+            elif smote=='tomek':
+                _smote = SMOTETomek(ratio=ratio, verbose=True)
+            else:
+                _smote = SMOTE(ratio=ratio, verbose=True, kind=smote)
+            X_train, y_train = _smote.fit_transform(X_train, y_train)
+            
+            # shuffle just in case
+            index_sh = np.random.choice(len(y_train), len(y_train), replace=False)
+            X_train = X_train[index_sh]
+            y_train = y_train[index_sh]
+        
         result_pp = fb_funcs.predict_proba(X_train, y_train, X_test, params)
         ytps = result_pp['y_test_proba']
         fpr, tpr, thresholds = roc_curve(y_test, ytps)
@@ -196,6 +220,9 @@ def optimize(trials):
         'C': hp.choice('C', 10.0**np.array(range(-5, 5))),
         'scale': hp.choice('scale', ['standard', 'log']),
         'class_weight': hp.choice('class_weight', ['auto', None]),
+        'smote': hp.choice('smote',
+                           [None, 'regular', 'borderline1', 'borderline2', 'svn',
+                            'enn', 'tomek']),
         'n_folds': 5
     }
 
@@ -242,7 +269,7 @@ def optimize(trials):
                 'n_folds': 5
                 }
 
-    best = fmin(objective, space_et,
+    best = fmin(objective, space_lr,
                 algo=tpe.suggest, trials=trials, max_evals=300)
 
     # logging
