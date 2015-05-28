@@ -353,6 +353,7 @@ def predict_proba(X_train, y_train, X_test, params):
                                    n_jobs=params['n_jobs'],
                                    max_features=params['max_features'],
                                    criterion=params['criterion'],
+                                   class_weight=params['class_weight'],
                                    verbose=params['verbose'],
                                    random_state=None)
                 
@@ -392,13 +393,15 @@ def predict_proba(X_train, y_train, X_test, params):
     elif "SVC" in model:
         clf = SVC(C=params['C'],
                   gamma=params['gamma'],
+                  class_weight=params['class_weight'],
                   probability=True)
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
 
     elif "logistic" in model:
         clf = LogisticRegression(penalty=params['penalty'],
-                                 C=params['C'])
+                                 C=params['C'],
+                                 class_weight=params['class_weight'])
         clf.fit(X_train, y_train)
         y_test_proba = clf.predict_proba(X_test)[:,1]
         

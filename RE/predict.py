@@ -341,7 +341,9 @@ elif 'resume' in argv[1]:
                             index_col=0)
 
     print info_test.describe()
-
+    keys_use = info_humans.keys()
+    feature_set = pd.DataFrame(keys_use, columns=['features'])
+    
 else:
     sys.exit(1)
 ############################################################################
@@ -355,8 +357,8 @@ params_xgb = {'model': 'XGB', 'colsample_bytree': 0.85, 'silent': 1,
 
 # params for et
 params_et = {'model': 'ET', 'n_estimators': 2000, 'max_features': None,
-            'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-             'n_jobs': 2, 'max_depth': 8}
+             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
+             'n_jobs': 2, 'max_depth': 8, 'class_weight': None}
 
 # params for RF
 params_rf = {'model': 'RF', 'n_estimators': 2000, 'max_features': None,
@@ -364,17 +366,16 @@ params_rf = {'model': 'RF', 'n_estimators': 2000, 'max_features': None,
              'n_jobs': -1, 'max_depth': 8}
 
 # params for logistic regression
-params_lr = {'model': 'logistic', 'penalty':'l1', 'C':0.1}
+params_lr = {'model': 'logistic', 'penalty':'l1', 'C':0.1, 'class_weight': 'auto'}
 
 # params for svc
-params_svc = {'model': 'SVC', 'C': 100.0, 'gamma': 0.001}
+params_svc = {'model': 'SVC', 'C': 10.0, 'gamma': 0.001, 'class_weight': 'auto'}
 
 # params for kneighbor
 params_kn = {'model': 'KN', 'n_neighbors': 32, 'weights': 'distance',
              'algorithm': 'auto', 'metric': 'minkowski'}
 
 params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn, params_lr]
-params_ens = [params_lr]
 
 roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
                              num_cv=5, num_folds=5, scale='log')
