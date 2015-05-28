@@ -253,7 +253,7 @@ def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     labels_train = labels_train[index_sh]
 
     # get matrices forms
-    X = info_given.sort(axis=1).as_matrix()
+    X = info_given.sort(axis=1).values.astype(float)
 
     if scale=='standard':
         scaler = StandardScaler()
@@ -269,7 +269,7 @@ def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     features = info_given.sort(axis=1).keys()
 
     if info_test is not None:
-        X_test = info_test.sort(axis=1).as_matrix()
+        X_test = info_test.sort(axis=1).values.astype(float)
 
         if scale == 'standard':
             X_test = scaler.transform(X_test)
@@ -436,33 +436,27 @@ def kfcv_ens(info_humans, info_bots, params,
     return [roc_auc.mean(axis=0), roc_auc_std.mean(axis=0)]
 
 
-def recursive_feature_selection(info_humans, info_bots):
+def recursive_feature_selection(info_humans, info_bots, params, scale=False):
 
-    X, y, features, scaler = get_Xy(info_humans, info_bots, scale=False)
+    X, y, features, scaler = get_Xy(info_humans, info_bots, scale=scale)
 
-    print "first feature selection by chi2 test"
-
+    print "first feature selection by variance test"
     skb = VarianceThreshold(threshold=(.8 * (1 - .8)))
     X_new = skb.fit_transform(X)
     features_1 = features[skb.get_support()]
-    
+
+    print "second feature selection by ch2 test"
     skb = SelectKBest(chi2, k=200)
     # skb = SelectFpr(chi2, alpha=0.005)
     X_new = skb.fit_transform(X_new, y)
     features_2 = features_1[skb.get_support()]
-    
-    set_trace()
-    
-    print "scale"
-    scaler = StandardScaler()
-    scaler.fit(X_new)
-    X_new = scaler.transform(X_new)
 
     # skb = PCA(n_components=250)
     # X_new = skb.fit_transform(X_new, y)
     
-    print "second feature selection by recursive featue elimination (RFECV)"
-    clf = LogisticRegression()
+    print "third feature selection by recursive featue elimination (RFECV)"
+    clf = LogisticRegression(penalty=params['penalty'],
+                             C=params['C'])
     # clf = SVC(kernel="linear")
     rfecv = RFECV(estimator=clf, step=1,
                   cv=cross_validation.StratifiedKFold(y, 5),
@@ -480,11 +474,11 @@ def recursive_feature_selection(info_humans, info_bots):
     # plt.show()
 
 
-def filter_features(info_humans, info_bots, k=200):
+def filter_features(info_humans, info_bots, k=200, scale=False):
     """
     Carry out 2-layer feature filtering
     """
-    X, y, features, scaler = get_Xy(info_humans, info_bots, scale=False)
+    X, y, features, scaler = get_Xy(info_humans, info_bots, scale=scale)
     
     vt = VarianceThreshold(threshold=(.8 * (1 - .8)))
     X_new = vt.fit_transform(X)

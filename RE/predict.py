@@ -24,7 +24,7 @@ from utils import (append_merchandises, append_countries, append_bba,
                    append_devices, append_bids_intervals, append_info,
                    write_submission)
 
-if len(argv) == 1:
+if 'start' in argv[1]:
     ##########################################################################
     # Load basic data
     ##########################################################################
@@ -54,46 +54,46 @@ if len(argv) == 1:
     info_test = append_merchandises(info_test, drop=True)
 
     ##########################################################################
-    # # Country data
-    # print "Adding country data..."
-    # cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
-    # cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
-    # cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
+    # Country data
+    print "Adding country data..."
+    cinfo_humans = pd.read_csv('data/country_info_humans.csv', index_col=0)
+    cinfo_bots = pd.read_csv('data/country_info_bots.csv', index_col=0)
+    cinfo_test = pd.read_csv('data/country_info_test.csv', index_col=0)
 
-    # cinfo_humans = cinfo_humans>0
-    # cinfo_bots = cinfo_bots>0
-    # cinfo_test = cinfo_test>0
+    cinfo_humans = cinfo_humans>0
+    cinfo_bots = cinfo_bots>0
+    cinfo_test = cinfo_test>0
     
-    # cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
-    # info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
-    # info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
-    # info_test = append_countries(info_test, cinfo_test, cts_appended)
+    cts_appended = cinfo_humans.keys().union(cinfo_bots.keys())
+    info_humans = append_countries(info_humans, cinfo_humans, cts_appended)
+    info_bots = append_countries(info_bots, cinfo_bots, cts_appended)
+    info_test = append_countries(info_test, cinfo_test, cts_appended)
 
-    # info_humans.fillna(0, inplace=True)
-    # info_bots.fillna(0, inplace=True)
-    # info_test.fillna(0, inplace=True)
+    info_humans.fillna(0, inplace=True)
+    info_bots.fillna(0, inplace=True)
+    info_test.fillna(0, inplace=True)
 
-    # # ##########################################################################
-    # # Device data
-    # print "Adding devices data"
-    # dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
-    # dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
-    # dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
+    ##########################################################################
+    # Device data
+    print "Adding devices data"
+    dinfo_humans = pd.read_csv('data/device_info_humans.csv', index_col=0)
+    dinfo_bots = pd.read_csv('data/device_info_bots.csv', index_col=0)
+    dinfo_test = pd.read_csv('data/device_info_test.csv', index_col=0)
 
-    # dinfo_humans = dinfo_humans>0
-    # dinfo_bots = dinfo_bots>0
-    # dinfo_test = dinfo_test>0
+    dinfo_humans = dinfo_humans>0
+    dinfo_bots = dinfo_bots>0
+    dinfo_test = dinfo_test>0
 
-    # devices_appended = dinfo_humans.keys()\
-    #                                .union(dinfo_bots.keys())\
-    #                                .union(dinfo_test.keys())
-    # info_humans = append_devices(info_humans, dinfo_humans, devices_appended)
-    # info_bots = append_devices(info_bots, dinfo_bots, devices_appended)
-    # info_test = append_devices(info_test, dinfo_test, devices_appended)
+    devices_appended = dinfo_humans.keys()\
+                                   .union(dinfo_bots.keys())\
+                                   .union(dinfo_test.keys())
+    info_humans = append_devices(info_humans, dinfo_humans, devices_appended)
+    info_bots = append_devices(info_bots, dinfo_bots, devices_appended)
+    info_test = append_devices(info_test, dinfo_test, devices_appended)
 
-    # info_humans.fillna(0, inplace=True)
-    # info_bots.fillna(0, inplace=True)
-    # info_test.fillna(0, inplace=True)
+    info_humans.fillna(0, inplace=True)
+    info_bots.fillna(0, inplace=True)
+    info_test.fillna(0, inplace=True)
 
     ##########################################################################
     # Bids count by auction data
@@ -106,7 +106,7 @@ if len(argv) == 1:
     min_bba = np.min([bbainfo_humans.shape[1],
                       bbainfo_bots.shape[1],
                       bbainfo_test.shape[1]])
-    min_bba = 1
+    min_bba = 10
 
     info_humans = append_bba(info_humans, bbainfo_humans, min_bba)
     info_bots = append_bba(info_bots, bbainfo_bots, min_bba)
@@ -190,25 +190,25 @@ if len(argv) == 1:
     # info_bots.fillna(0, inplace=True)
     # info_test.fillna(0, inplace=True)
     
-    # ##########################################################################
-    # # url data
-    # print "Adding url data"
-    # urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
-    # urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
-    # urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
+    ##########################################################################
+    # url data
+    print "Adding url data"
+    urlinfo_humans = pd.read_csv('data/url_info_humans.csv', index_col=0)
+    urlinfo_bots = pd.read_csv('data/url_info_bots.csv', index_col=0)
+    urlinfo_test = pd.read_csv('data/url_info_test.csv', index_col=0)
 
-    # urlinfo_humans = urlinfo_humans>0
-    # urlinfo_bots = urlinfo_bots>0
-    # urlinfo_test = urlinfo_test>0
+    urlinfo_humans = urlinfo_humans>0
+    urlinfo_bots = urlinfo_bots>0
+    urlinfo_test = urlinfo_test>0
     
-    # keys_url = urlinfo_humans.keys()
-    # info_humans = append_info(info_humans, urlinfo_humans, keys_url)
-    # info_bots = append_info(info_bots, urlinfo_bots, keys_url)
-    # info_test = append_info(info_test, urlinfo_test, keys_url)
+    keys_url = urlinfo_humans.keys()
+    info_humans = append_info(info_humans, urlinfo_humans, keys_url)
+    info_bots = append_info(info_bots, urlinfo_bots, keys_url)
+    info_test = append_info(info_test, urlinfo_test, keys_url)
 
-    # info_humans.fillna(0, inplace=True)
-    # info_bots.fillna(0, inplace=True)
-    # info_test.fillna(0, inplace=True)
+    info_humans.fillna(0, inplace=True)
+    info_bots.fillna(0, inplace=True)
+    info_test.fillna(0, inplace=True)
 
     ##########################################################################
     # bid counts for each period data
@@ -256,11 +256,11 @@ if len(argv) == 1:
     info_bots.fillna(0, inplace=True)
     info_test.fillna(0, inplace=True)
 
-    # keys_use = keys_all
+    keys_use = keys_all
 
     # Feature selection by filtering!
-    keys_use = fb_funcs.filter_features(info_humans, info_bots, k=100)
-    keys_use = list(keys_use[1])
+    # keys_use = fb_funcs.filter_features(info_humans, info_bots, k=400)
+    # keys_use = list(keys_use[1])
 
     keys_use = ['interval_64', 'interval_128', 'interval_8',
                 'interval_32', 'ave_num_bids', 'interval_4',
@@ -309,10 +309,11 @@ if len(argv) == 1:
     num_features = len(keys_use)
     
     print "Saving prprocessed data.."
-    info_humans.to_csv('data_pp/info_humans_%d.csv' %num_features)
-    info_bots.to_csv('data_pp/info_bots_%d.csv' %num_features)
-    info_test.to_csv('data_pp/info_test_%d.csv' %num_features)
-
+    info_humans.to_csv('data/data_pp/info_humans_%d.csv' %num_features)
+    info_bots.to_csv('data/data_pp/info_bots_%d.csv' %num_features)
+    info_test.to_csv('data/data_pp/info_test_%d.csv' %num_features)
+    feature_set = pd.DataFrame(keys_use, columns=['features'])
+    feature_set.to_csv('data/data_pp/features.csv')
     # # Feature selection by chi2 test and recursive featuer elimination
     # skb, rfecv = fb_funcs.recursive_feature_selection(info_humans, info_bots)
     # print rfecv.support_
@@ -332,11 +333,11 @@ elif 'resume' in argv[1]:
         n_resume = 9
     
     print "loading preprocessed data..."
-    info_humans = pd.read_csv('data/info_humans_pp%d.csv' %(n_resume),
+    info_humans = pd.read_csv('data/data_pp/info_humans_%d.csv' %(n_resume),
                               index_col=0)
-    info_bots = pd.read_csv('data/info_bots_pp%d.csv' %(n_resume),
+    info_bots = pd.read_csv('data/data_pp/info_bots_%d.csv' %(n_resume),
                             index_col=0)
-    info_test = pd.read_csv('data/info_test_pp%d.csv' %(n_resume),
+    info_test = pd.read_csv('data/data_pp/info_test_%d.csv' %(n_resume),
                             index_col=0)
 
     print info_test.describe()
@@ -373,13 +374,15 @@ params_kn = {'model': 'KN', 'n_neighbors': 32, 'weights': 'distance',
              'algorithm': 'auto', 'metric': 'minkowski'}
 
 params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn, params_lr]
+params_ens = [params_lr]
 
 roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                             num_cv=10, num_folds=10, scale='log')
+                             num_cv=5, num_folds=5, scale='log')
 
 roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
                         columns = map(lambda x: x['model'], params_ens)+['ENS'])
 roc_aucs.to_csv('data/submi/roc_aucs.csv', float_format='%11.6f')
+feature_set.to_csv('data/submi/features.csv')
 
 print "cross validation results:"
 print roc_aucs
