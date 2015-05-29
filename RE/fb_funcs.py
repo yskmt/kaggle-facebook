@@ -42,119 +42,8 @@ if ubd_path not in sys.path:
 
 from UnbalancedDataset import SMOTE, SMOTETomek, SMOTEENN
 
-def predict_cv(info_humans, info_bots, plot_roc=False, n_folds=5,
-               params=None, scale=None):
-    """
-    prediction by undersampling
 
-    p_valid: validation set fraction
-    """
-
-    model = params['model']
-    
-    X, y, features = get_Xy(info_humans, info_bots, scale=scale)
-
-    # split for cv
-    kf = cross_validation.StratifiedKFold(
-        y, n_folds=n_folds, shuffle=True, random_state=None)
-
-    # cv scores
-    roc_auc = np.zeros(n_folds)
-    clf_score = np.zeros(n_folds)
-
-    n_cv = 0
-    for train_index, test_index in kf:
-        print "CV#: ", n_cv
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-
-        if 'XGB' in model:
-            # XGBoost
-            dtrain = xgb.DMatrix(X_train, label=y_train)
-            xgb_params = {"objective": "binary:logistic",
-                          'eta': params['eta'],
-                          'gamma': params['gamma'],
-                          'max_depth': params['max_depth'],
-                          'min_child_weight': params['min_child_weight'],
-                          'subsample': params['subsample'],
-                          'colsample_bytree': params['colsample_bytree'],
-                          'nthread': params['nthread'],
-                          'silent': params['silent']}
-            num_rounds = int(params['num_rounds'])
-
-            evallist = [(dtrain, 'train')]
-            bst = xgb.train(xgb_params, dtrain, num_rounds, evallist)
-            dtest = xgb.DMatrix(X_test)
-            y_test_proba = bst.predict(dtest)
-            fpr, tpr, thresholds = roc_curve(y_test, y_test_proba)
-            roc_auc[n_cv] = auc(fpr, tpr)
-            clf_score[n_cv] = 0.0
-            clf = 0
-
-        else:
-            if "ET" in model:
-
-                clf = ExtraTreesClassifier(n_estimators=params['n_estimators'],
-                                           n_jobs=params['n_jobs'],
-                                           max_features=params['max_features'],
-                                           criterion=params['criterion'],
-                                           verbose=params['verbose'],
-                                           random_state=0)
-
-            elif "SVC" in model:
-                clf = svm.SVC(probability=True)
-
-            elif "logistic" in model:
-                clf = LogisticRegression()
-
-            elif "RF" in model:
-                clf = RandomForestClassifier(n_estimators=params['n_estimators'],
-                                           n_jobs=params['n_jobs'],
-                                           max_features=params['max_features'],
-                                           criterion=params['criterion'],
-                                             verbose=params['verbose'],
-                                             max_depth=params['max_depth'])
-                
-            clf.fit(X_train, y_train)
-            y_test_proba = clf.predict_proba(X_test)
-            y_test_pred = clf.predict(X_test)
-            fpr, tpr, thresholds = roc_curve(y_test, y_test_proba[:, 1])
-            roc_auc[n_cv] = auc(fpr, tpr)
-            clf_score[n_cv] = clf.score(X_test, y_test)
-
-            if "RF" in model:
-                importances = clf.feature_importances_
-                std = np.std([tree.feature_importances_ for tree in clf.estimators_],
-                             axis=0)
-                indices = np.argsort(importances)[::-1]
-
-                # Print the feature ranking
-                print("Feature ranking:")
-                for f in range(min(len(features), 40)):
-                    print("%d. feature %d: %s = (%f)"
-                          % (f, indices[f], features[indices[f]], importances[indices[f]]))
-
-                print list((features[indices]))[:40]
-
-            
-        if plot_roc:
-            # Plot ROC curve
-            # plt.clf()
-            plt.plot(fpr, tpr, label='ROC curve # %d (area = %0.2f)' %
-                     (n_cv, roc_auc[n_cv]))
-            plt.plot([0, 1], [0, 1], 'k--')
-            plt.xlim([0.0, 1.0])
-            plt.ylim([0.0, 1.0])
-            plt.xlabel('False Positive Rate')
-            plt.ylabel('True Positive Rate')
-            plt.title('Receiver operating characteristic example')
-            plt.legend(loc="lower right")
-            plt.show()
-
-        n_cv += 1
-
-    return clf, roc_auc, clf_score
-
+randst = 1234
 
 def fit_and_predict(info_humans, info_bots, info_test,
                     params, p_use=None, scale=None):
@@ -187,12 +76,13 @@ def fit_and_predict(info_humans, info_bots, info_test,
         = get_Xy(info_humans, info_bots, info_test, scale=scale)
 
     for mn in range(num_models):
-        pp_result = predict_proba(X_train, y_train, X_test, params[mn])
-        ytps.append(pp_result['y_test_proba'])
+        result_pp = predict_proba(X_train, y_train, X_test, params[mn])
+        
+        ytps.append(result_pp['y_test_proba'])
         # feature importance by ET or RF
-        if 'indices_ranking' in pp_result.keys():
-            result['features'] = list((features[pp_result['indices_ranking']]))
-            result['importances'] = pp_result['importances']
+        if 'indices_ranking' in result_pp.keys():
+            result['features'] = list((features[result_pp['indices_ranking']]))
+            result['importances'] = result_pp['importances']
         
     ytps = np.array(ytps)
     # ensemble!
@@ -298,7 +188,7 @@ def get_Xy(info_humans, info_bots, info_test=None, scale=True):
     return X, y, features, scaler
 
 def predict_cv_ens(info_humans, info_bots, params,
-                   n_folds=5, scale=None, smote=False):
+                   n_folds=5, scale=None):
     """
     prediction by ensemble
     """
@@ -307,7 +197,7 @@ def predict_cv_ens(info_humans, info_bots, params,
     
     # split for cv
     kf = cross_validation.StratifiedKFold(
-        y, n_folds=n_folds, shuffle=True, random_state=None)
+        y, n_folds=n_folds, shuffle=True, random_state=randst)
 
     # cv scores
     roc_auc = np.zeros([n_folds, len(params)+1])
@@ -318,25 +208,10 @@ def predict_cv_ens(info_humans, info_bots, params,
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        if smote:
-            ratio = float(np.count_nonzero(y==0))/float(np.count_nonzero(y==1))
-
-            if smote=='enn':
-                _smote = SMOTEENN(ratio=ratio, verbose=True)
-            elif smote=='tomek':
-                _smote = SMOTETomek(ratio=ratio, verbose=True)
-            else:
-                _smote = SMOTE(ratio=ratio, verbose=True, kind=smote)
-            X_train, y_train = _smote.fit_transform(X_train, y_train)
-            
-            # shuffle just in case
-            index_sh = np.random.choice(len(y_train), len(y_train), replace=False)
-            X_train = X_train[index_sh]
-            y_train = y_train[index_sh]
-        
         ytps = []
         for mn in range(len(params)):
             result_pp = predict_proba(X_train, y_train, X_test, params[mn])
+
             ytps.append(result_pp['y_test_proba'])
             fpr, tpr, thresholds = roc_curve(y_test, ytps[mn])
             roc_auc[n_cv, mn] = auc(fpr, tpr)
@@ -359,9 +234,30 @@ def predict_proba(X_train, y_train, X_test, params):
     # define output dict
     result = {}
     model = params['model']
+    smote_flg = params['smote']
 
+    if smote_flg:
+        ratio = float(np.count_nonzero(y_train==0))/float(np.count_nonzero(y_train==1))
+
+        if smote_flg=='enn':
+            _smote = SMOTEENN(ratio=ratio, verbose=True)
+        elif smote_flg=='tomek':
+            _smote = SMOTETomek(ratio=ratio, verbose=True)
+        else:
+            _smote = SMOTE(ratio=ratio, verbose=True, kind=smote_flg)
+        X_train_, y_train_ = _smote.fit_transform(X_train, y_train)
+
+        # shuffle just in case
+        index_sh = np.random.choice(
+            len(y_train_), len(y_train_), replace=False)
+        X_train_ = X_train_[index_sh]
+        y_train_ = y_train_[index_sh]
+    else:
+        X_train_ = X_train
+        y_train_ = y_train
+        
     if 'XGB' in model:
-        dtrain = xgb.DMatrix(X_train, label=y_train)
+        dtrain = xgb.DMatrix(X_train_, label=y_train_)
         xgb_params = {"objective": "binary:logistic",
                       'eta': params['eta'],
                       'gamma': params['gamma'],
@@ -388,9 +284,9 @@ def predict_proba(X_train, y_train, X_test, params):
                                    criterion=params['criterion'],
                                    class_weight=params['class_weight'],
                                    verbose=params['verbose'],
-                                   random_state=None)
+                                   random_state=randst)
                 
-        clf.fit(X_train, y_train)
+        clf.fit(X_train_, y_train_)
         y_test_proba = clf.predict_proba(X_test)[:,1]
 
         # feature importance
@@ -409,9 +305,9 @@ def predict_proba(X_train, y_train, X_test, params):
                                      max_features=params['max_features'],
                                      criterion=params['criterion'],
                                      verbose=params['verbose'],
-                                     random_state=None)
+                                     random_state=randst)
 
-        clf.fit(X_train, y_train)
+        clf.fit(X_train_, y_train_)
         y_test_proba = clf.predict_proba(X_test)[:,1]
 
     elif "KN" in model:
@@ -420,7 +316,7 @@ def predict_proba(X_train, y_train, X_test, params):
                                    algorithm=params['algorithm'],
                                    metric=params['metric'])
 
-        clf.fit(X_train, y_train)
+        clf.fit(X_train_, y_train_)
         y_test_proba = clf.predict_proba(X_test)[:,1]
 
     elif "SVC" in model:
@@ -428,14 +324,14 @@ def predict_proba(X_train, y_train, X_test, params):
                   gamma=params['gamma'],
                   class_weight=params['class_weight'],
                   probability=True)
-        clf.fit(X_train, y_train)
+        clf.fit(X_train_, y_train_)
         y_test_proba = clf.predict_proba(X_test)[:,1]
 
     elif "logistic" in model:
         clf = LogisticRegression(penalty=params['penalty'],
                                  C=params['C'],
                                  class_weight=params['class_weight'])
-        clf.fit(X_train, y_train)
+        clf.fit(X_train_, y_train_)
         y_test_proba = clf.predict_proba(X_test)[:,1]
         
     result['y_test_proba'] = y_test_proba
@@ -445,7 +341,7 @@ def predict_proba(X_train, y_train, X_test, params):
     
     
 def kfcv_ens(info_humans, info_bots, params,
-             num_cv=5, num_folds=5, scale=None, smote=False):
+             num_cv=5, num_folds=5, scale=None):
     """
     k-fold cross validation
     """
@@ -460,7 +356,7 @@ def kfcv_ens(info_humans, info_bots, params,
     
     for i in range(num_cv):
         ra = predict_cv_ens(info_humans, info_bots, params,
-                            n_folds=num_folds, scale=scale, smote=smote)
+                            n_folds=num_folds, scale=scale)
 
         print ra.mean(axis=0), ra.std(axis=0)
         roc_auc.append(ra.mean(axis=0))

@@ -289,11 +289,6 @@ if 'start' in argv[1]:
     #             'bba_17', 'phone224', '0_num_urls', 'phone11', 'phone125',
     #             'ave_num_ips']
 
-    # keys_use = ['interval_64', 'num_devices', 'uk', 'phone76',
-    #             'ave_num_bids', 'interval_128', 'interval_16', 'ave_num_devices',
-    #             'bba_4', 'streak_80', 'interval_8', 'bba_8', 'bba_9', 'ave_num_urls',
-    #             'interval_32', 'bba_5', 'ave_num_aucs']
-
     # # 0.927785 +- 0.032087
     # keys_use = ['ave_num_bids', 'interval_64', 'bba_9', 'bba_8',
     #             'interval_16', 'interval_8', 'num_devices', 'bba_4', 'interval_128']
@@ -350,36 +345,42 @@ else:
 # k-fold Cross Validaton
 ############################################################################
 
+# save features to use
+feature_set.to_csv('data/submi/features.csv')
+
 # params for xgb
 params_xgb = {'model': 'XGB', 'colsample_bytree': 0.85, 'silent': 1,
               'num_rounds': 2000, 'nthread': 8, 'min_child_weight': 3.0,
-              'subsample': 0.7, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 2.0}
+              'subsample': 0.7, 'eta': 0.002, 'max_depth': 5.0, 'gamma': 2.0,
+              'smote': None}
 
 # params for et
-params_et = {'model': 'ET', 'n_estimators': 2000, 'max_features': None,
-             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-             'n_jobs': 2, 'max_depth': 8, 'class_weight': None}
+params_et = {'model': 'ET', 'n_estimators': 2000, 'max_features': 0.5,
+             'criterion': 'entropy', 'plot_importance': False, 'verbose': 1,
+             'n_jobs': 2, 'max_depth': 8, 'class_weight': None, 'smote': None}
 
 # params for RF
-params_rf = {'model': 'RF', 'n_estimators': 2000, 'max_features': None,
-             'criterion': 'gini', 'plot_importance': False, 'verbose': 1,
-             'n_jobs': -1, 'max_depth': 8}
+params_rf = {'model': 'RF', 'n_estimators': 2000, 'max_features': 0.5,
+             'criterion': 'entropy', 'plot_importance': False, 'verbose': 1,
+             'n_jobs': 2, 'max_depth': 8, 'class_weight': None, 'smote': None}
 
 # params for logistic regression
-params_lr = {'model': 'logistic', 'penalty':'l1', 'C':0.1, 'class_weight': 'auto'}
+params_lr3 = {'model': 'logistic', 'penalty':'l1', 'C':0.1,
+              'class_weight': None, 'smote': None}
 
 # params for svc
-params_svc = {'model': 'SVC', 'C': 10.0, 'gamma': 0.001, 'class_weight': 'auto'}
+params_svc = {'model': 'SVC', 'C': 100.0, 'gamma': 0.001, 'class_weight': 'auto',
+               'smote': 'enn'}
 
 # params for kneighbor
-params_kn = {'model': 'KN', 'n_neighbors': 32, 'weights': 'distance',
-             'algorithm': 'auto', 'metric': 'minkowski'}
+params_kn = {'model': 'KN', 'n_neighbors': 64, 'weights': 'distance',
+             'algorithm': 'auto', 'metric': 'manhattan', 'smote': 'regular'}
 
-params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn, params_lr]
-params_ens = [params_lr]
+params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn, params_lr3]
+# params_ens = [params_et]
 
 roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                             num_cv=10, num_folds=10, scale='log', smote='tomek')
+                             num_cv=1, num_folds=5, scale='log')
 
 roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
                         columns = map(lambda x: x['model'], params_ens)+['ENS'])

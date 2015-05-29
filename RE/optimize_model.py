@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn.metrics import auc, roc_curve
 from sklearn import cross_validation
 
-from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from hyperopt import fmin, tpe, hp, STATUS_OK, STATUS_FAIL, Trials
 import xgboost as xgb
 
 import fb_funcs
@@ -181,7 +181,12 @@ def objective(params):
                 _smote = SMOTETomek(ratio=ratio, verbose=True)
             else:
                 _smote = SMOTE(ratio=ratio, verbose=True, kind=smote)
-            X_train, y_train = _smote.fit_transform(X_train, y_train)
+
+            try:
+                X_train, y_train = _smote.fit_transform(X_train, y_train)
+            except:
+                return {'loss': 0.0, 'std': 0.0,
+                        'status': STATUS_FAIL}
             
             # shuffle just in case
             index_sh = np.random.choice(len(y_train), len(y_train), replace=False)
@@ -232,6 +237,9 @@ def optimize(trials):
         'C': hp.choice('C', 10.0**np.array(range(-5, 5))),
         'scale': hp.choice('scale', ['standard', 'log']),
         'class_weight': hp.choice('class_weight', ['auto', None]),
+        'smote': hp.choice('smote',
+                           [None, 'regular', 'borderline1', 'borderline2', 'svn',
+                            'enn', 'tomek']),
         'n_folds': 5
     }
 
@@ -240,6 +248,9 @@ def optimize(trials):
                 'weights': hp.choice('weights', ['distance', 'uniform']),
                 'metric': hp.choice('metric', ['minkowski', 'manhattan']),
                 'algorithm': 'auto',
+                'smote': hp.choice('smote',
+                   [None, 'regular', 'borderline1', 'borderline2', 'svn',
+                    'enn', 'tomek']),
                 'scale': hp.choice('scale', ['standard', 'log']),
                 'n_folds': 5
                 }
@@ -253,6 +264,9 @@ def optimize(trials):
                 'n_jobs': -1,
                 'max_depth': hp.choice('max_depth', [None, 2, 4, 8]),
                 'class_weight': hp.choice('class_weight', ['auto', None]),
+                'smote': hp.choice('smote',
+                                   [None, 'regular', 'borderline1', 'borderline2', 'svn',
+                                    'enn', 'tomek']),
                 'scale': None,
                 'n_folds': 5
                 }
@@ -269,7 +283,7 @@ def optimize(trials):
                 'n_folds': 5
                 }
 
-    best = fmin(objective, space_lr,
+    best = fmin(objective, space_et,
                 algo=tpe.suggest, trials=trials, max_evals=300)
 
     # logging

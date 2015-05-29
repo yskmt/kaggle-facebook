@@ -9,9 +9,11 @@ with open('log_results_%s.txt' % model, 'r') as f:
         ll.append(float(l.split(':')[2].split(',')[0]))
 
 ll = np.array(ll)
+llo = np.argsort(ll)
 print np.max(ll), np.argmax(ll)
 
 with open('log_params_%s.txt' % model, 'r') as f:
+    # print np.array(f.readlines())[llo]
     print f.readlines()[np.argmax(ll)]
 with open('log_results_%s.txt' % model, 'r') as f:
     print f.readlines()[np.argmax(ll)]
