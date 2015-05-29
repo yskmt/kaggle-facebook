@@ -20,7 +20,7 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, STATUS_FAIL, Trials
 import xgboost as xgb
 
 import fb_funcs
-from fb_funcs import predict_cv, fit_and_predict
+from fb_funcs import fit_and_predict
 from utils import (append_merchandises, append_countries, append_bba,
                    append_devices, append_bids_intervals, append_info,
                    write_submission)
@@ -110,12 +110,12 @@ def xgb_objective(params):
         cv_result[ind_max].split('\t')[1].split(':')[1].split('+')[1])
 
     # logging
-    with open('log_results_1.txt', 'a') as f:
+    with open('log_results_xgb.txt', 'a') as f:
         f.write(str({'loss': auc_max, 'std': std_max, 'status':
                      STATUS_OK, 'ind': ind_max}))
         f.write('\n')
 
-    with open('log_params_1.txt', 'a') as f:
+    with open('log_params_xgb.txt', 'a') as f:
         f.write(str(params))
         f.write('\n')
 
@@ -154,7 +154,6 @@ def objective(params):
     """
 
     n_folds = params['n_folds']
-    smote = params['smote']
     
     X, y, features, scaler = fb_funcs.get_Xy(info_humans, info_bots,
                                              scale=params['scale'])
@@ -171,27 +170,6 @@ def objective(params):
         print "CV#: ", n_cv
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
-
-        if smote:
-            ratio = float(np.count_nonzero(y==0))/float(np.count_nonzero(y==1))
-
-            if smote=='enn':
-                _smote = SMOTEENN(ratio=ratio, verbose=True)
-            elif smote=='tomek':
-                _smote = SMOTETomek(ratio=ratio, verbose=True)
-            else:
-                _smote = SMOTE(ratio=ratio, verbose=True, kind=smote)
-
-            try:
-                X_train, y_train = _smote.fit_transform(X_train, y_train)
-            except:
-                return {'loss': 0.0, 'std': 0.0,
-                        'status': STATUS_FAIL}
-            
-            # shuffle just in case
-            index_sh = np.random.choice(len(y_train), len(y_train), replace=False)
-            X_train = X_train[index_sh]
-            y_train = y_train[index_sh]
         
         result_pp = fb_funcs.predict_proba(X_train, y_train, X_test, params)
         ytps = result_pp['y_test_proba']
@@ -257,12 +235,12 @@ def optimize(trials):
 
     space_et = {'model': 'ET',
                 'n_estimators': hp.choice('n_estimators', [1000, 2000]),
-                'max_features': hp.choice('max_features', ['auto', None, 0.5, 0.25, 0.125]),
+                'max_features': hp.choice('max_features', ['auto', None, 0.75, 0.5, 0.25, 0.125]),
                 'criterion': hp.choice('criterion', ['gini', 'entropy']),
                 'plot_importance': False,
                 'verbose': 1,
                 'n_jobs': -1,
-                'max_depth': hp.choice('max_depth', [None, 2, 4, 8]),
+                'max_depth': hp.choice('max_depth', [None, 2, 4, 8, 10, 12]),
                 'class_weight': hp.choice('class_weight', ['auto', None]),
                 'smote': hp.choice('smote',
                                    [None, 'regular', 'borderline1', 'borderline2', 'svn',
@@ -298,6 +276,7 @@ def optimize(trials):
 # Trials object where the history of search will be stored
 trials = Trials()
 
-best = optimize(trials)
+# best = optimize(trials)
+best = optimize_xgb(trials)
 
 print best

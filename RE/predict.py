@@ -19,7 +19,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import roc_curve, auc
 
 import fb_funcs
-from fb_funcs import predict_cv, fit_and_predict
+from fb_funcs import fit_and_predict
 from utils import (append_merchandises, append_countries, append_bba,
                    append_devices, append_bids_intervals, append_info,
                    write_submission)
@@ -259,19 +259,19 @@ if 'start' in argv[1]:
     keys_use = keys_all
 
     # Feature selection by filtering!
-    # keys_use = fb_funcs.filter_features(info_humans, info_bots, k=400)
-    # keys_use = list(keys_use[1])
+    keys_use = fb_funcs.filter_features(info_humans, info_bots, k=800)
+    keys_use = list(keys_use[1])
 
-    keys_use = ['interval_64', 'interval_128', 'interval_8',
-                'interval_32', 'ave_num_bids', 'interval_4',
-                'interval_16', 'ave_num_devices', 'bba_1', 'streak_1',
-                'num_devices', 'interval_2', 'streak_80', 'streak_40',
-                'streak_15', 'num_bids', 'ave_num_urls',
-                'num_bids_sametime_diffauc', 'streak_10', 'streak_5',
-                'num_urls', 'ave_num_aucs', 'ave_num_countries',
-                'streak_20', 'interval_1', 'num_bids_sametime',
-                'num_countries', 'ave_num_ips', 'num_aucs', 'num_ips',
-                'mobile', 'num_bids_sametime_sameauc', 'num_periods']
+    # keys_use = ['interval_64', 'interval_128', 'interval_8',
+    #             'interval_32', 'ave_num_bids', 'interval_4',
+    #             'interval_16', 'ave_num_devices', 'bba_1', 'streak_1',
+    #             'num_devices', 'interval_2', 'streak_80', 'streak_40',
+    #             'streak_15', 'num_bids', 'ave_num_urls',
+    #             'num_bids_sametime_diffauc', 'streak_10', 'streak_5',
+    #             'num_urls', 'ave_num_aucs', 'ave_num_countries',
+    #             'streak_20', 'interval_1', 'num_bids_sametime',
+    #             'num_countries', 'ave_num_ips', 'num_aucs', 'num_ips',
+    #             'mobile', 'num_bids_sametime_sameauc', 'num_periods']
     
     # # 0.959142 +- 0.021752
     # keys_use = ['streak_1', 'uk', 'interval_64', 'streak_5',
@@ -307,6 +307,7 @@ if 'start' in argv[1]:
     info_humans.to_csv('data/data_pp/info_humans_%d.csv' %num_features)
     info_bots.to_csv('data/data_pp/info_bots_%d.csv' %num_features)
     info_test.to_csv('data/data_pp/info_test_%d.csv' %num_features)
+
     feature_set = pd.DataFrame(keys_use, columns=['features'])
     feature_set.to_csv('data/data_pp/features.csv')
     # # Feature selection by chi2 test and recursive featuer elimination
@@ -380,7 +381,7 @@ params_ens = [params_xgb, params_et, params_svc, params_rf, params_kn, params_lr
 # params_ens = [params_et]
 
 roc_aucs = fb_funcs.kfcv_ens(info_humans, info_bots, params_ens,
-                             num_cv=1, num_folds=5, scale='log')
+                             num_cv=1, num_folds=10, scale='log')
 
 roc_aucs = pd.DataFrame(np.array(roc_aucs), index=['auc', 'std'],
                         columns = map(lambda x: x['model'], params_ens)+['ENS'])

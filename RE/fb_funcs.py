@@ -245,8 +245,15 @@ def predict_proba(X_train, y_train, X_test, params):
             _smote = SMOTETomek(ratio=ratio, verbose=True)
         else:
             _smote = SMOTE(ratio=ratio, verbose=True, kind=smote_flg)
-        X_train_, y_train_ = _smote.fit_transform(X_train, y_train)
 
+        try:
+            X_train_, y_train_ = _smote.fit_transform(X_train, y_train)
+        except:
+            num_test = X_test.shape[0]
+            result['y_test_proba'] = np.zeros(num_test)
+            result['clf'] = 0
+            return result
+            
         # shuffle just in case
         index_sh = np.random.choice(
             len(y_train_), len(y_train_), replace=False)

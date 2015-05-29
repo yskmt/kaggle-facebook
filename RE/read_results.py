@@ -3,6 +3,11 @@ import sys
 
 model = sys.argv[1]
 
+try:
+    num = int(sys.argv[2])
+except:
+    num = 2
+
 ll = []
 with open('log_results_%s.txt' % model, 'r') as f:
     for l in f:
@@ -13,10 +18,11 @@ llo = np.argsort(ll)
 print np.max(ll), np.argmax(ll)
 
 with open('log_params_%s.txt' % model, 'r') as f:
-    # print np.array(f.readlines())[llo]
-    print f.readlines()[np.argmax(ll)]
+    print np.array(f.readlines())[llo][:-num:-1]
+    # print f.readlines()[np.argmax(ll)]
 with open('log_results_%s.txt' % model, 'r') as f:
-    print f.readlines()[np.argmax(ll)]
+    print np.array(f.readlines())[llo][:-num:-1]
+    # print f.readlines()[np.argmax(ll)]
 
 
 # logistic
