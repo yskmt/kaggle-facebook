@@ -133,3 +133,15 @@ class_weight=0.06
 
 25.
 
+
+
+28.
+xgb
+0.966210355521 0.0110413492381
+max features (+url, +bids counts by periods)
+
+
+29.
+ET
+n_est = 3000
+0.955849939553 0.01446240735

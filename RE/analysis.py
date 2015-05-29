@@ -12,7 +12,10 @@ import pandas as pd
 from analysis_funcs import (gather_info, gather_info_by_periods,
                             gather_country_info,
                             gather_auc_bids_info, gather_device_info,
-                            gather_count_info)
+                            gather_count_info,
+                            gather_bayes_counts)
+
+import analysis_funcs as af
 
 # set(bids_test['merchandise'].unique())\
 #     .union(set(bids_humans['merchandise'].unique()))\
@@ -28,9 +31,15 @@ merchandise_keys = ['auto parts',
                     'office equipment',
                     'sporting goods']
 
-bids_humans = pd.read_csv('data/bids_humans.csv', index_col=0)
-bids_bots = pd.read_csv('data/bids_bots.csv', index_col=0)
-bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
+# bids_humans = pd.read_csv('data/bids_humans.csv', index_col=0)
+# bids_bots = pd.read_csv('data/bids_bots.csv', index_col=0)
+# bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
+
+
+bayes_counts_bots = af.gather_bayes_counts(bids_bots)
+bayes_counts_humans = af.gather_bayes_counts(bids_humans)
+
+# bayes_counts_test = af.gather_bayes_counts(bids_test)
 
 ############################################################################
 # Gathering basic counts information
@@ -139,17 +148,17 @@ bids_test = pd.read_csv('data/bids_test.csv', index_col=0)
 # Gathering basic counts information by each period
 ############################################################################
 
-print "Analyzing huaman basic count data per each period..."
-info_humans_bp = gather_info_by_periods(bids_humans)
-info_humans_bp.to_csv('data/info_humans_bp.csv')
+# print "Analyzing huaman basic count data per each period..."
+# info_humans_bp = gather_info_by_periods(bids_humans)
+# info_humans_bp.to_csv('data/info_humans_bp.csv')
 
-print "Analyzing huaman basic count data per each period..."
-info_bots_bp = gather_info_by_periods(bids_bots)
-info_bots_bp.to_csv('data/info_bots_bp.csv')
+# print "Analyzing huaman basic count data per each period..."
+# info_bots_bp = gather_info_by_periods(bids_bots)
+# info_bots_bp.to_csv('data/info_bots_bp.csv')
 
-print "Analyzing huaman basic count data per each period..."
-info_test_bp = gather_info_by_periods(bids_test)
-info_test_bp.to_csv('data/info_test_bp.csv')
+# print "Analyzing huaman basic count data per each period..."
+# info_test_bp = gather_info_by_periods(bids_test)
+# info_test_bp.to_csv('data/info_test_bp.csv')
 
 
 ############################################################################
